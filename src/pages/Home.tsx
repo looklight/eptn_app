@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { db } from '../firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import Header from '../components/Header';
 import CategoryGrid from '../components/CategoryGrid';
 import { categoriesData } from '../data';
@@ -9,9 +12,13 @@ type Selections = Record<string, string | null>;
 const Home: React.FC = () => {
   const [userName, setUserName] = useState('');
   const [selections, setSelections] = useState<Selections>({
-    category1: null, category2: null, category3: null, category4: null
+    category1: null,
+    category2: null,
+    category3: null,
+    category4: null
   });
   const [screen, setScreen] = useState<'login'|'select'|'summary'>('login');
+  const navigate = useNavigate();
 
   const handleStart = () => {
     if (!userName.trim()) { alert('Inserisci il nome'); return; }
@@ -30,7 +37,7 @@ const Home: React.FC = () => {
 
   const reset = () => {
     setUserName('');
-    setSelections({ category1:null, category2:null, category3:null, category4:null});
+    setSelections({ category1:null, category2:null, category3:null, category4:null });
     setScreen('login');
   };
 
@@ -40,6 +47,20 @@ const Home: React.FC = () => {
     const item = (categoriesData as CategoriesData)[key].find(i => i.id === id);
     return acc + (item?.price ?? 0);
   }, 0);
+
+  const saveConfig = async () => {
+    if (!userName.trim()) { alert('Inserisci il nome'); return; }
+
+    await addDoc(collection(db, "configs"), {
+      userName,
+      selections,
+      totalPrice,
+      createdAt: serverTimestamp()
+    });
+
+    alert('✓ Configurazione salvata con successo!');
+    navigate('/all-configs'); // vai alla schermata delle configurazioni salvate
+  };
 
   return (
     <div className="container">
@@ -52,7 +73,6 @@ const Home: React.FC = () => {
               <label htmlFor="userName">User Name</label>
               <input id="userName" value={userName} onChange={e => setUserName(e.target.value)} placeholder="Add your name..." />
               <button className="btn-primary" onClick={handleStart} style={{ marginTop: 10 }}>Start the configuration →</button>
-              <button className="btn-success" onClick={() => setScreen('select')} style={{ marginTop: 8 }}>👥 Show all configurations</button>
             </div>
           </div>
         </div>
@@ -61,20 +81,20 @@ const Home: React.FC = () => {
       {screen === 'select' && (
         <div className="screen active">
           <Header title="Low Voltage selection tool" subtitle="Choose the best components for your applications" user={userName} />
-          <section className="section-header"><h2>⚡️ Main Circuit Breaker</h2><p>Choose the main MCCB suitable for your application</p></section>
+          <section className="section-header"><h2>⚡️ Main Circuit Breaker</h2></section>
           <CategoryGrid categoryKey="category1" products={categoriesData.category1} selectedId={selections.category1} onSelect={handleSelect} />
 
-          <section className="section-header"><h2>⚙️ Big Motor Starter</h2><p>Choose the Motor Starter suitable for BIG motors</p></section>
+          <section className="section-header"><h2>⚙️ Big Motor Starter</h2></section>
           <CategoryGrid categoryKey="category2" products={categoriesData.category2} selectedId={selections.category2} onSelect={handleSelect} />
 
-          <section className="section-header"><h2>⚙️ Small Motor Starter (10 motors)</h2><p>Choose the Motor Starter suitable for SMALL motors</p></section>
+          <section className="section-header"><h2>⚙️ Small Motor Starter (10 motors)</h2></section>
           <CategoryGrid categoryKey="category3" products={categoriesData.category3} selectedId={selections.category3} onSelect={handleSelect} />
 
-          <section className="section-header"><h2>🔧 Supervision System</h2><p>Choose the right devices for supervision system</p></section>
+          <section className="section-header"><h2>🔧 Supervision System</h2></section>
           <CategoryGrid categoryKey="category4" products={categoriesData.category4} selectedId={selections.category4} onSelect={handleSelect} />
 
           <div className="navigation-buttons">
-            <button className="btn-secondary" onClick={() => { if (confirm('Are you sure you want to change user? All data will be lost.')) reset(); }}>← Change User</button>
+            <button className="btn-secondary" onClick={reset}>← Change User</button>
             <button className="btn-primary" onClick={showSummary}>Show recap →</button>
           </div>
         </div>
@@ -111,7 +131,7 @@ const Home: React.FC = () => {
 
           <div className="navigation-buttons">
             <button className="btn-secondary" onClick={() => setScreen('select')}>← Change selection</button>
-            <button className="btn-primary" onClick={() => { alert('Salvataggio via Firebase non ancora collegato in questa demo.'); setScreen('login'); }}>✓ Save configuration</button>
+            <button className="btn-primary" onClick={saveConfig}>✓ Save configuration</button>
           </div>
         </div>
       )}
