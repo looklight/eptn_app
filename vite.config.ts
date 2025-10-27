@@ -1,7 +1,10 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
 
-export default defineConfig({
-  plugins: [react()],
-  server: { port: 5173 }
-})
+export default defineConfig(async () => {
+  // import dinamico per evitare errori ESM durante la risoluzione del plugin
+  const reactPlugin = (await import('@vitejs/plugin-react')).default;
+  return {
+    plugins: [reactPlugin()],
+    server: { port: 5173 }
+  };
+});
