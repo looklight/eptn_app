@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Product } from '../types';
 import ProductCard from './ProductCard';
+import './index.css';
 
 type Props = {
   categoryKey: string;
