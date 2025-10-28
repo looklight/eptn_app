@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import AllConfigs from "./pages/AllConfigs";
-import "./index.css";
+import './components/index.css';
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
