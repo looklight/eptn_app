@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import Header from '../components/Header';
 import { categoriesData } from '../data';
@@ -35,6 +35,30 @@ const AllConfigs: React.FC = () => {
 
   const categoryOrder = ['category1', 'category2', 'category3', 'category4'];
 
+  // Funzione per resettare tutte le configurazioni
+  const handleResetAll = async () => {
+    const password = prompt("Inserisci la password per resettare tutte le configurazioni:");
+    if (password !== "1234") {
+      alert("Password errata!");
+      return;
+    }
+
+    if (!window.confirm("Sei sicuro di voler eliminare TUTTE le configurazioni? Questa azione non è reversibile.")) {
+      return;
+    }
+
+    try {
+      for (const c of configs) {
+        await deleteDoc(doc(db, "configs", c.id));
+      }
+      setConfigs([]);
+      alert("Tutte le configurazioni sono state eliminate.");
+    } catch (error) {
+      console.error(error);
+      alert("Errore durante l'eliminazione delle configurazioni.");
+    }
+  };
+
   return (
     <div className="container">
       <Header title="👥 Team Configurations" subtitle="Overview of all selections" />
@@ -69,7 +93,7 @@ const AllConfigs: React.FC = () => {
                       key={cat.id}
                       className="category-card selected"
                       style={{
-                        flex: '1 1 110px', // leggermente più largo
+                        flex: '1 1 110px',
                         minWidth: '110px',
                         padding: '6px',
                         fontSize: '0.75rem',
@@ -100,6 +124,25 @@ const AllConfigs: React.FC = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Pulsante Reset */}
+      {configs.length > 0 && (
+        <button
+          onClick={handleResetAll}
+          style={{
+            marginTop: '30px',
+            backgroundColor: '#ff4d4f',
+            color: 'white',
+            fontWeight: 600,
+            padding: '12px 20px',
+            borderRadius: '10px',
+            cursor: 'pointer',
+            border: 'none',
+          }}
+        >
+          Reset All Configurations
+        </button>
       )}
     </div>
   );
