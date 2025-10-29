@@ -358,9 +358,9 @@ input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0
   .category-specs {
     font-size: 0.78rem;
     color: var(--subtitle-color);
-    line-height: 1.05;
+    line-height: 1.2;
     display: -webkit-box;
-    -webkit-line-clamp: 1;  /* 1 riga per specs */
+    -webkit-line-clamp: 2;  /* 2 righe per specs */
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
