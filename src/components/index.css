@@ -222,53 +222,72 @@ input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0
 .navigation-buttons button { flex: 1; }
 
 /* =========================
-   MOBILE: emoji box + prezzo sotto, corpo testuale multilinea
-   Sostituire la precedente @media (max-width:480px)
+   MOBILE FIX (replace previous @media (max-width:480px))
+   Cards full-width, no horizontal overflow, text wraps cleanly.
    ========================= */
 @media (max-width: 480px) {
-  .container { padding: 16px; }
+  /* Base protections */
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+  }
 
-  /* lista verticale full width senza scroll orizzontale */
+  .container {
+    padding: 12px;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* make categories a vertical list full-width */
   .categories-grid {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
     width: 100%;
     box-sizing: border-box;
+    padding: 0;
+    margin: 0;
   }
 
-  /* card: più alta e uniforme per evitare overflow */
+  /* card: full-width, box-sizing, allow wrapping inside */
   .category-card {
+    width: 100%;
+    box-sizing: border-box;
     padding: 12px;
-    min-height: 104px;        /* aumentata per chiarezza, uniforme */
+    min-height: 110px;    /* aumenta se vuoi più spazio */
     display: flex;
     align-items: stretch;
-    box-sizing: border-box;
-    width: 100%;
     overflow: hidden;
+    word-wrap: break-word;
+    -webkit-font-smoothing: antialiased;
   }
 
+  /* row handling: keep content aligned, let child wrap if needed */
   .card-row {
     display: flex;
     align-items: center;
-    width: 100%;
     gap: 12px;
+    width: 100%;
+    flex-wrap: nowrap;
+    min-width: 0; /* important for flex children shrinking */
   }
 
-  /* Colonna fissa per emoji + mobile price (stessa larghezza per tutte le card) */
+  /* fixed emoji column - same width for all cards */
   .emoji-column {
-    flex: 0 0 76px;      /* LARGHEZZA FISSA per garantire uniformità */
+    flex: 0 0 84px;    /* fixed width, puoi ridurre a 72px se preferisci */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 6px;
     box-sizing: border-box;
+    min-width: 72px;
+    max-width: 25%;
   }
 
-  /* White box that contains emojis: fixed size and centered content.
-     Use flex-wrap so multiple emoji can break into multiple rows within the box. */
-  .category-image {
+  /* white box behind emoji - fixed square */
+  .emoji-column .category-image {
     width: 56px;
     height: 56px;
     display: flex;
@@ -283,72 +302,77 @@ input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0
     text-align: center;
   }
 
-  /* emoji inside the white box: smaller font-size so 3 fit comfortably */
-  .category-image .emoji {
+  .emoji-column .category-image .emoji {
+    font-size: 18px;
+    line-height: 1;
     display: inline-flex;
     gap: 3px;
-    font-size: 18px;      /* ridotta per far entrare fino a 3 emoji */
-    line-height: 1;
-    align-items: center;
     justify-content: center;
+    align-items: center;
   }
 
-  /* price shown under emoji in mobile */
-  .emoji-price-mobile {
-    font-size: 0.98rem;
+  /* price under emoji (mobile) */
+  .emoji-column .emoji-price-mobile {
+    font-size: 1rem;
     font-weight: 700;
     color: var(--primary-color);
     line-height: 1;
   }
 
-  /* corpo centrale: testo multilinea, limita righe per evitare overflow verticale estremo */
+  /* central body: allow wrapping & multiple lines, but limit growth */
   .card-body {
     flex: 1 1 auto;
+    min-width: 0; /* crucial so it can shrink inside flex */
     display: flex;
     flex-direction: column;
     justify-content: center;
-    min-width: 0; /* permette ellipsis */
     gap: 6px;
+    overflow: hidden;
   }
 
+  /* allow up to 2 lines for name and description; avoid horizontal overflow */
   .category-name {
     font-size: 1rem;
     font-weight: 700;
-    line-height: 1.05;
-    /* una riga per il nome, ellipsis se troppo lungo */
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .category-description {
-    font-size: 0.88rem;
-    color: var(--text-color);
-    line-height: 1.15;
-    /* fino a 2 righe per descrizione */
+    line-height: 1.1;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 2;  /* fino a 2 righe */
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
+    word-break: break-word;
+  }
+
+  .category-description {
+    font-size: 0.9rem;
+    color: var(--text-color);
+    line-height: 1.15;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;  /* fino a 2 righe */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
   }
 
   .category-specs {
     font-size: 0.78rem;
     color: var(--subtitle-color);
     line-height: 1.05;
-    /* una riga per specs */
-    white-space: nowrap;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;  /* 1 riga per specs */
+    -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
+    word-break: break-word;
   }
 
-  /* Nascondi il prezzo a destra su mobile; già mostrato sotto l'emoji */
+  /* hide desktop price on mobile (we show price under emoji) */
   .category-price.desktop-only {
     display: none;
   }
 
-  /* check icon dimensione/posizione più piccola su mobile */
+  /* small check icon adjustments to avoid overflow */
   .check-icon {
     top: 8px;
     right: 8px;
@@ -357,8 +381,9 @@ input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0
     font-size: 0.9rem;
   }
 
-  /* prevenire scroll orizzontale su extreme long names */
-  html, body {
-    overflow-x: hidden;
+  /* ensure no element exceeds viewport */
+  .category-card, .category-card * {
+    max-width: 100%;
+    box-sizing: border-box;
   }
 }
