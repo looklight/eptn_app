@@ -101,7 +101,7 @@ const SlidePage: React.FC = () => {
       setLoading(false);
     };
     load();
-  }, [navigate]);
+  }, [navigate, name]);
 
   const setAnswer = (elementId: string, value: AnswerValue) => {
     const updated = { ...answers, [elementId]: value };
