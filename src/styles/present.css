@@ -1,38 +1,51 @@
 /* ================================================
    PRESENTER VIEW (/present)
+   Full-height, one-slide-at-a-time layout
    ================================================ */
 
 .ws-present {
-  min-height: calc(100vh - 56px);
+  height: 100dvh;
   background: var(--ws-bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
+
+/* ── Top bar ── */
 
 .ws-present-topbar {
   background: var(--ws-navy);
   color: white;
-  padding: 12px 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 56px;
+  flex-shrink: 0;
   z-index: 5;
 }
 
-.ws-present-count {
-  font-size: 15px;
-  font-weight: 600;
-  opacity: 0.85;
+.ws-present-topbar-row1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  gap: 12px;
+  height: 36px;
 }
 
+.ws-present-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Live badge */
+
 .ws-present-live {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
   color: #4ade80;
   letter-spacing: 0.5px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  flex-shrink: 0;
 }
 
 .ws-live-dot {
@@ -41,44 +54,300 @@
   background: currentColor;
   border-radius: 50%;
   flex-shrink: 0;
+  animation: ws-live-pulse 2s ease-in-out infinite;
 }
 
-.ws-present-body {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 36px 24px 60px;
+@keyframes ws-live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* Participant count */
+
+.ws-present-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+}
+
+.ws-present-count-sub {
+  font-weight: 400;
+  opacity: 0.6;
+}
+
+/* ── Navigation control ── */
+
+.ws-present-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ws-present-nav-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.08);
+  color: white;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+  padding: 0;
+  flex-shrink: 0;
+}
+.ws-present-nav-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.18);
+  border-color: rgba(255,255,255,0.45);
+}
+.ws-present-nav-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+
+.ws-present-nav-center {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
 }
 
-.ws-present-section {
-  background: var(--ws-card);
-  border-radius: var(--ws-radius-md);
-  box-shadow: var(--ws-shadow);
-  overflow: hidden;
+.ws-present-nav-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.ws-present-section-title {
+.ws-present-nav-pos {
   font-size: 13px;
   font-weight: 800;
   color: white;
-  background: var(--ws-navy);
-  padding: 12px 24px;
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
+  line-height: 1;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
 }
 
-.ws-present-elements {
+.ws-present-nav-of {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.5;
+}
+
+.ws-present-nav-title {
+  font-size: 10px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.55);
+  text-align: center;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Right group in topbar ── */
+
+.ws-present-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.ws-present-lobby-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.7);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.ws-present-lobby-btn:hover {
+  background: rgba(255,255,255,0.15);
+  color: white;
+}
+
+/* ── URL label in topbar ── */
+
+.ws-present-topbar-url {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.4);
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: monospace;
+  letter-spacing: -0.2px;
+}
+
+/* ── Slide strip ── */
+
+.ws-present-strip {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 14px 3px;
+  background: rgba(0,0,0,0.18);
+  flex-wrap: wrap;
+}
+
+.ws-present-strip-step {
+  height: 2px;
+  width: 14px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.2);
+  transition: background 0.25s, width 0.25s, height 0.25s;
+  flex-shrink: 0;
+}
+
+.ws-present-strip-step--done {
+  background: rgba(255,255,255,0.45);
+}
+
+.ws-present-strip-step--current {
+  background: var(--ws-teal);
+  width: 20px;
+  height: 3px;
+}
+
+/* ── Body — fills remaining height ── */
+
+.ws-present-body {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  overflow: hidden;
+}
+
+/* ── Slide section — fills body ── */
+
+.ws-present-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--ws-card);
+}
+
+.ws-present-section--current {
+  /* Inherits flex: 1 from ws-present-section */
+}
+
+
+/* Mode badge */
+
+.ws-present-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.ws-present-mode-badge--moderated {
+  background: rgba(0,153,153,0.25);
+  color: var(--ws-teal);
+}
+
+.ws-present-mode-badge--pin {
+  background: rgba(251,191,36,0.2);
+  color: #fbbf24;
+}
+
+.ws-present-mode-badge--autonomous {
+  background: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.55);
+}
+
+/* Answered count */
+
+.ws-present-hd-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.5);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.ws-present-hd-count--full {
+  color: #4ade80;
+}
+
+/* ── Slide cover image (presenter view) ── */
+
+.ws-present-slide-image-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 16px 20px 0;
+  flex-shrink: 0;
+}
+
+.ws-present-slide-image {
+  width: 340px;
+  height: 340px;
+  object-fit: cover;
+  border-radius: 16px;
+}
+
+/* Response progress bar */
+
+.ws-present-resp-bar-wrap {
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+
+.ws-present-resp-bar-fill {
+  height: 100%;
+  background: var(--ws-teal);
+  transition: width 0.5s ease;
+  min-width: 3px;
+}
+
+.ws-present-resp-bar-fill--full {
+  background: #4ade80;
+}
+
+/* ── Slide title in body ── */
+
+.ws-present-slide-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--ws-navy);
+  line-height: 1.25;
+  margin: 24px 28px 8px;
+  text-align: center;
+}
+
+/* ── Elements — scrollable ── */
+
+.ws-present-elements {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .ws-present-el {
   padding: 24px;
   border-bottom: 1px solid var(--ws-border);
+  flex-shrink: 0;
 }
 .ws-present-el:last-child { border-bottom: none; }
 
@@ -88,6 +357,7 @@
   color: var(--ws-navy);
   margin-bottom: 6px;
   line-height: 1.4;
+  text-align: center;
 }
 
 .ws-present-el-meta {
@@ -95,6 +365,7 @@
   color: var(--ws-muted);
   margin-bottom: 16px;
   font-weight: 500;
+  text-align: center;
 }
 
 .ws-present-no-data {
@@ -104,12 +375,23 @@
   margin-top: 6px;
 }
 
-/* Bar charts */
+.ws-present-info-els {
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+/* ── Bar charts ── */
 
 .ws-present-bars {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-width: 640px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .ws-present-bar-row {
@@ -159,14 +441,14 @@
   color: var(--ws-muted);
 }
 
-/* Scale column chart */
+/* ── Scale column chart ── */
 
 .ws-present-scale-bars {
   display: flex;
   align-items: flex-end;
   gap: 10px;
+  justify-content: center;
   height: 120px;
-  padding-bottom: 0;
 }
 
 .ws-present-scale-col {
@@ -207,12 +489,15 @@
   color: var(--ws-muted);
 }
 
-/* Yes / No */
+/* ── Yes / No ── */
 
 .ws-present-yesno {
   display: flex;
   border-radius: var(--ws-radius);
   overflow: hidden;
+  max-width: 640px;
+  margin: 0 auto;
+  width: 100%;
   height: 56px;
   font-size: 15px;
   font-weight: 600;
@@ -240,7 +525,7 @@
   padding: 0 12px;
 }
 
-/* Text count */
+/* ── Text count ── */
 
 .ws-present-text-count {
   font-size: 28px;
@@ -249,7 +534,7 @@
   margin-top: 6px;
 }
 
-/* Configurator */
+/* ── Configurator ── */
 
 .ws-present-config-cat {
   margin-bottom: 20px;
@@ -265,39 +550,131 @@
   margin-bottom: 10px;
 }
 
-/* Join card with QR */
 
-.ws-present-join-card {
+/* ── Welcome / QR screen ── */
+
+.ws-present-welcome {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 24px;
-  background: var(--ws-card);
-  border-radius: var(--ws-radius-md);
-  box-shadow: var(--ws-shadow);
-  padding: 24px 28px;
-  border-left: 4px solid var(--ws-teal);
+  justify-content: center;
+  background: var(--ws-navy);
+  color: white;
+  padding: 48px 64px;
 }
 
-.ws-present-join-info {
+.ws-present-welcome-inner {
+  display: flex;
+  align-items: center;
+  gap: 72px;
+  max-width: 960px;
+  width: 100%;
+}
+
+.ws-present-welcome-left {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
 }
 
-.ws-present-join-label {
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--ws-teal);
+.ws-present-welcome-qr {
+  padding: 16px;
+  background: white;
+  border-radius: 16px;
+  line-height: 0;
+  box-shadow: 0 16px 56px rgba(0,0,0,0.45);
 }
 
-.ws-present-join-url {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--ws-navy);
+.ws-present-welcome-url {
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.6);
+  font-family: monospace;
   letter-spacing: -0.3px;
 }
+
+.ws-present-welcome-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.ws-present-welcome-name {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--ws-teal);
+  margin-bottom: 14px;
+}
+
+.ws-present-welcome-headline {
+  font-size: 44px;
+  font-weight: 800;
+  color: white;
+  margin: 0 0 16px;
+  line-height: 1.1;
+  letter-spacing: -1.5px;
+}
+
+.ws-present-welcome-hint {
+  font-size: 17px;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.7;
+  margin: 0 0 28px;
+}
+
+.ws-present-welcome-count {
+  font-size: 18px;
+  font-weight: 700;
+  color: #4ade80;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.ws-present-welcome-count::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+  flex-shrink: 0;
+  animation: ws-live-pulse 2s ease-in-out infinite;
+}
+
+.ws-present-welcome-waiting {
+  font-size: 15px;
+  color: rgba(255,255,255,0.3);
+  margin-bottom: 24px;
+  font-style: italic;
+}
+
+.ws-present-welcome-btn {
+  padding: 14px 28px;
+  background: var(--ws-teal);
+  color: white;
+  border: none;
+  border-radius: var(--ws-radius-md);
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s;
+  align-self: flex-start;
+  letter-spacing: 0.3px;
+}
+.ws-present-welcome-btn:hover { background: var(--ws-teal-dark); }
+
+/* ── Loading / empty ── */
 
 .ws-present-loading {
   display: flex;
@@ -309,57 +686,13 @@
 }
 
 .ws-present-empty {
-  text-align: center;
-  color: var(--ws-muted);
-  padding: 80px 20px;
-  font-size: 15px;
-}
-
-/* ================================================
-   PRESENT: navigation control
-   ================================================ */
-
-.ws-present-nav {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.ws-present-nav-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.9);
-  white-space: nowrap;
-}
-
-.ws-present-nav-title {
-  font-weight: 400;
-  opacity: 0.7;
-}
-
-.ws-present-nav-btn {
-  width: 32px;
-  height: 32px;
-  border: 1px solid rgba(255,255,255,0.25);
-  border-radius: var(--ws-radius);
-  background: rgba(255,255,255,0.1);
-  color: white;
-  font-size: 15px;
-  font-family: inherit;
-  cursor: pointer;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, border-color 0.15s;
-  padding: 0;
-  text-transform: none;
-  letter-spacing: 0;
+  color: var(--ws-muted);
+  font-size: 15px;
 }
-.ws-present-nav-btn:hover:not(:disabled) {
-  background: rgba(255,255,255,0.2);
-  border-color: rgba(255,255,255,0.5);
-}
-.ws-present-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
 /* ================================================
    PRESENT: quiz results
@@ -398,4 +731,3 @@
 .ws-present-lb-rank { font-weight: 800; color: var(--ws-muted); width: 24px; flex-shrink: 0; }
 .ws-present-lb-name { flex: 1; color: var(--ws-navy); font-weight: 600; }
 .ws-present-lb-time { font-size: 12px; color: var(--ws-muted); width: 44px; text-align: right; }
-

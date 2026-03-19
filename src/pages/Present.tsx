@@ -1,16 +1,32 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Users, Unlock, KeyRound, CheckCircle2, QrCode } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { collection, onSnapshot, query, orderBy, getDocs, doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import type { Slide, WorkshopResponse, ConfigAnswer, QuizAnswer } from '../types';
+import type { Slide, WorkshopResponse, ConfigAnswer, QuizAnswer, SlideMode, InfoElement } from '../types';
 import { getSlideMode } from '../types';
+import InfoEl from '../components/elements/InfoEl';
+
+const ModeIcon: React.FC<{ mode: SlideMode }> = ({ mode }) => {
+  if (mode === 'pin') return <KeyRound size={11} />;
+  if (mode === 'autonomous') return <Unlock size={11} />;
+  return <Users size={11} />;
+};
+
+const MODE_LABELS: Record<SlideMode, string> = {
+  moderated: 'Moderata',
+  pin: 'Con PIN',
+  autonomous: 'Autonoma',
+};
 
 const Present: React.FC = () => {
   const [slides, setSlides] = useState<Slide[]>([]);
   const [responses, setResponses] = useState<WorkshopResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentSlide, setCurrentSlide] = useState<number>(0);
+  // -1 = welcome/QR screen (pre-start); 0+ = slide index
+  const [currentSlide, setCurrentSlide] = useState<number>(-1);
+  const [showLobby, setShowLobby] = useState<boolean>(true);
+  const [workshopName, setWorkshopName] = useState<string>('');
 
   useEffect(() => {
     const loadSlides = async () => {
@@ -25,8 +41,13 @@ const Present: React.FC = () => {
     );
     const unsubConfig = onSnapshot(doc(db, 'workshop', 'config'), snap => {
       const data = snap.data();
-      if (data?.currentSlide !== undefined) {
-        setCurrentSlide(data.currentSlide as number);
+      const lobbyEnabled = data?.showLobby !== false;
+      setShowLobby(lobbyEnabled);
+      if (data?.name) setWorkshopName(data.name as string);
+      if (data?.currentSlide !== undefined) setCurrentSlide(data.currentSlide as number);
+      // Se la lobby è disabilitata e currentSlide è ancora pre-start, inizializza a 0
+      if (!lobbyEnabled && (data?.currentSlide === undefined || (data.currentSlide as number) < 0)) {
+        setDoc(doc(db, 'workshop', 'config'), { currentSlide: 0 }, { merge: true }).catch(console.error);
       }
     });
     return () => { unsubResponses(); unsubConfig(); };
@@ -39,68 +60,195 @@ const Present: React.FC = () => {
   const sorted = useMemo(() => [...slides].sort((a, b) => a.order - b.order), [slides]);
   const hasModerated = useMemo(() => sorted.some(s => getSlideMode(s) === 'moderated'), [sorted]);
 
-  if (loading) return (
-    <div className="ws-present-loading">Caricamento...</div>
-  );
+  // Navigazione con frecce tastiera
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      const eff = Math.max(0, currentSlide);
+      const inLobby = showLobby && currentSlide < 0;
+      if (e.key === 'ArrowRight' && !inLobby && eff < sorted.length - 1) setAdminSlide(eff + 1);
+      if (e.key === 'ArrowLeft' && !inLobby && eff > 0) setAdminSlide(eff - 1);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [currentSlide, showLobby, sorted.length]);
+
+  if (loading) return <div className="ws-present-loading">Caricamento...</div>;
 
   const complete = responses.filter(r => !r.partial).length;
   const inProgress = responses.filter(r => r.partial).length;
-  const currentSlideTitle = sorted[currentSlide]?.title ?? '';
+  const totalParticipants = responses.length;
+
+  const isWelcome = showLobby && currentSlide < 0;
+  const effectiveSlide = isWelcome ? -1 : Math.max(0, currentSlide);
+  const slide = !isWelcome ? (sorted[effectiveSlide] ?? null) : null;
+  const mode = slide ? getSlideMode(slide) : 'moderated';
+  const interactive = slide ? slide.elements.filter(el => el.type !== 'info') : [];
+  const answeredCount = interactive.length > 0
+    ? responses.filter(r => interactive.some(el => r.answers?.[el.id] !== undefined)).length
+    : null;
 
   return (
     <div className="ws-present">
-      <div className="ws-present-topbar">
-        <span className="ws-present-count">
-          {complete} {complete === 1 ? 'risposta completa' : 'risposte complete'}
-          {inProgress > 0 && <span style={{ opacity: 0.6 }}> · {inProgress} in corso</span>}
-        </span>
-        {hasModerated && (
-          <div className="ws-present-nav">
-            <button
-              className="ws-present-nav-btn"
-              disabled={currentSlide <= 0}
-              onClick={() => setAdminSlide(currentSlide - 1)}
-              title="Slide precedente"
-            ><ChevronLeft size={16} /></button>
-            <span className="ws-present-nav-label">
-              Slide {currentSlide + 1} di {sorted.length}
-              {currentSlideTitle && <span className="ws-present-nav-title"> · {currentSlideTitle}</span>}
-            </span>
-            <button
-              className="ws-present-nav-btn"
-              disabled={currentSlide >= sorted.length - 1}
-              onClick={() => setAdminSlide(currentSlide + 1)}
-              title="Slide successiva"
-            ><ChevronRight size={16} /></button>
-          </div>
-        )}
-        <span className="ws-present-live"><span className="ws-live-dot" />Live</span>
-      </div>
 
-      <div className="ws-present-body">
-        <div className="ws-present-join-card">
-          <QRCodeSVG value={window.location.origin + '/'} size={96} />
-          <div className="ws-present-join-info">
-            <span className="ws-present-join-label">Partecipa al workshop</span>
-            <span className="ws-present-join-url">{window.location.origin}/</span>
+      {/* ── TOP BAR ── */}
+      <div className="ws-present-topbar">
+        <div className="ws-present-topbar-row1">
+
+          <div className="ws-present-topbar-left">
+            <span className="ws-present-live"><span className="ws-live-dot" />Live</span>
+            <span className="ws-present-count">
+              <strong>{totalParticipants}</strong> partecipanti
+              {inProgress > 0 && <span className="ws-present-count-sub"> · {inProgress} in corso</span>}
+              {complete > 0 && <span className="ws-present-count-sub"> · {complete} completati</span>}
+            </span>
           </div>
+
+          {!isWelcome && (
+            <div className="ws-present-nav">
+              <button
+                className="ws-present-nav-btn"
+                disabled={!hasModerated || effectiveSlide <= 0}
+                onClick={() => setAdminSlide(effectiveSlide - 1)}
+                title="Slide precedente"
+              ><ChevronLeft size={16} /></button>
+
+              <div className="ws-present-nav-center">
+                <div className="ws-present-nav-meta">
+                  <span className="ws-present-nav-pos">
+                    {effectiveSlide + 1}<span className="ws-present-nav-of"> / {sorted.length}</span>
+                  </span>
+                  <span className={`ws-present-mode-badge ws-present-mode-badge--${mode}`}>
+                    <ModeIcon mode={mode} />{MODE_LABELS[mode]}
+                  </span>
+                  {answeredCount !== null && totalParticipants > 0 && (
+                    <span className={`ws-present-hd-count${answeredCount === totalParticipants ? ' ws-present-hd-count--full' : ''}`}>
+                      {answeredCount === totalParticipants && <CheckCircle2 size={11} />}
+                      {answeredCount}/{totalParticipants}
+                    </span>
+                  )}
+                </div>
+                {slide?.title && (
+                  <span className="ws-present-nav-title">{slide.title}</span>
+                )}
+              </div>
+
+              <button
+                className="ws-present-nav-btn"
+                disabled={!hasModerated || effectiveSlide >= sorted.length - 1}
+                onClick={() => setAdminSlide(effectiveSlide + 1)}
+                title="Slide successiva"
+              ><ChevronRight size={16} /></button>
+            </div>
+          )}
+
+          <div className="ws-present-topbar-right">
+            {showLobby && !isWelcome && (
+              <button className="ws-present-lobby-btn" onClick={() => setAdminSlide(-1)} title="Torna alla lobby">
+                <QrCode size={14} /> Lobby
+              </button>
+            )}
+          </div>
+
         </div>
 
-        {sorted.map(slide => {
-          const interactive = slide.elements.filter(el => el.type !== 'info');
-          if (interactive.length === 0) return null;
-          return (
-            <div key={slide.id} className="ws-present-section">
-              <h2 className="ws-present-section-title">{slide.title}</h2>
-              <div className="ws-present-elements">
-                {interactive.map(el => {
+        {/* Slide strip — hidden on welcome screen */}
+        {!isWelcome && (
+          <div className="ws-present-strip">
+            {sorted.map((s, i) => (
+              <div
+                key={s.id}
+                className={`ws-present-strip-step${i === effectiveSlide ? ' ws-present-strip-step--current' : i < effectiveSlide ? ' ws-present-strip-step--done' : ''}`}
+                title={s.title ? `Slide ${i + 1}: ${s.title}` : `Slide ${i + 1}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── BODY ── */}
+      <div className="ws-present-body">
+
+        {/* Welcome / QR screen */}
+        {isWelcome && (
+          <div className="ws-present-welcome">
+            <div className="ws-present-welcome-inner">
+
+              <div className="ws-present-welcome-left">
+                <div className="ws-present-welcome-qr">
+                  <QRCodeSVG value={window.location.origin + '/'} size={300} />
+                </div>
+                <div className="ws-present-welcome-url">{window.location.origin}/</div>
+              </div>
+
+              <div className="ws-present-welcome-right">
+                {workshopName && (
+                  <div className="ws-present-welcome-name">{workshopName}</div>
+                )}
+                <h1 className="ws-present-welcome-headline">Partecipa al workshop</h1>
+                <p className="ws-present-welcome-hint">
+                  Scannerizza il QR con il tuo telefono<br />
+                  o visita l'indirizzo qui accanto
+                </p>
+                {totalParticipants > 0 ? (
+                  <div className="ws-present-welcome-count">
+                    {totalParticipants} {totalParticipants === 1 ? 'partecipante connesso' : 'partecipanti connessi'}
+                  </div>
+                ) : (
+                  <div className="ws-present-welcome-waiting">In attesa di partecipanti...</div>
+                )}
+                <button className="ws-present-welcome-btn" onClick={() => setAdminSlide(0)}>
+                  Avvia presentazione <ChevronRight size={18} />
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* Current slide */}
+        {!isWelcome && !slide && (
+          <div className="ws-present-empty">Nessuna slide disponibile.</div>
+        )}
+
+        {!isWelcome && slide && (
+          <div className="ws-present-section">
+
+            {/* Response progress bar — shown at top of content when there are interactive elements */}
+            {answeredCount !== null && totalParticipants > 0 && (
+              <div className="ws-present-resp-bar-wrap">
+                <div
+                  className={`ws-present-resp-bar-fill${answeredCount === totalParticipants ? ' ws-present-resp-bar-fill--full' : ''}`}
+                  style={{ width: `${(answeredCount / totalParticipants) * 100}%` }}
+                />
+              </div>
+            )}
+
+            {/* Elements */}
+            <div className="ws-present-elements">
+              {slide.title && (
+                <h2 className="ws-present-slide-title">{slide.title}</h2>
+              )}
+              {slide.imageUrl && (
+                <div className="ws-present-slide-image-wrap">
+                  <img src={slide.imageUrl} alt="" className="ws-present-slide-image" />
+                </div>
+              )}
+              {interactive.length === 0 ? (
+                <div className="ws-present-info-els">
+                  {slide.elements.filter(el => el.type === 'info').map(el => (
+                    <InfoEl key={el.id} element={el as InfoElement} />
+                  ))}
+                </div>
+              ) : (
+                interactive.map(el => {
                   const answered = responses.filter(r => r.answers?.[el.id] !== undefined);
                   const count = answered.length;
 
                   if (count === 0) return (
                     <div key={el.id} className="ws-present-el">
                       <div className="ws-present-el-label">
-                        {el.type === 'question' ? el.text : el.title}
+                        {el.type === 'configurator' ? el.title : el.text}
                       </div>
                       <div className="ws-present-no-data">Nessuna risposta ancora</div>
                     </div>
@@ -159,8 +307,7 @@ const Present: React.FC = () => {
                           {Object.entries(counts).map(([v, c]) => (
                             <div key={v} className="ws-present-scale-col">
                               <div className="ws-present-scale-bar-wrap">
-                                <div className="ws-present-scale-bar-fill"
-                                  style={{ height: `${(c / maxCount) * 100}%` }} />
+                                <div className="ws-present-scale-bar-fill" style={{ height: `${(c / maxCount) * 100}%` }} />
                               </div>
                               <div className="ws-present-scale-num">{v}</div>
                               <div className="ws-present-scale-count">{c}</div>
@@ -317,14 +464,12 @@ const Present: React.FC = () => {
                   }
 
                   return null;
-                })}
-              </div>
+                })
+              )}
             </div>
-          );
-        })}
 
-        {sorted.every(s => s.elements.filter(e => e.type !== 'info').length === 0) && (
-          <div className="ws-present-empty">Nessun elemento interattivo nelle slide.</div>
+
+          </div>
         )}
       </div>
     </div>

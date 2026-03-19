@@ -62,6 +62,7 @@ export type Slide = {
   mode?: SlideMode;
   elements: SlideElement[];
   showRecap?: boolean;
+  imageUrl?: string;
 };
 
 export const getSlideMode = (slide: Slide): SlideMode => {
@@ -75,6 +76,7 @@ export type Workshop = {
   name: string;
   isActive: boolean;
   currentSlide?: number;
+  showLobby?: boolean; // default true — mostra schermata QR lobby prima delle slide
 };
 
 export type ConfigAnswer = Record<string, string | null>;

@@ -427,6 +427,11 @@ const SlidePage: React.FC = () => {
         </div>
 
         <div className="ws-slide-content">
+          {slide.imageUrl && (
+            <div className="ws-slide-image-wrap">
+              <img src={slide.imageUrl} alt="" className="ws-slide-image" />
+            </div>
+          )}
           {slide.elements.map(el => {
             if (el.type === 'info') return <InfoEl key={el.id} element={el} />;
             if (el.type === 'question') return (

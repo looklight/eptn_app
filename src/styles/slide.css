@@ -61,7 +61,23 @@
   flex: 1;
 }
 
-.ws-slide-header { margin-bottom: 28px; }
+.ws-slide-header { margin-bottom: 20px; text-align: center; }
+
+/* ---- Slide cover image ---- */
+
+.ws-slide-image-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.ws-slide-image {
+  width: min(220px, 55vw);
+  height: min(220px, 55vw);
+  object-fit: cover;
+  border-radius: 16px;
+  display: block;
+}
 
 .ws-slide-counter {
   font-size: 12px;
@@ -104,6 +120,7 @@
   margin: 0;
   white-space: pre-wrap;
   opacity: 0.85;
+  text-align: center;
 }
 
 .ws-el-question {
@@ -119,6 +136,7 @@
   color: var(--ws-navy);
   margin: 0 0 20px;
   line-height: 1.45;
+  text-align: center;
 }
 
 /* Multiple choice */
@@ -202,7 +220,7 @@
   letter-spacing: 0.5px;
 }
 
-.ws-scale-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.ws-scale-buttons { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
 
 .ws-scale-btn {
   width: 52px;

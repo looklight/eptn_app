@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch } from 'firebase/firestore';
-import { db } from '../../firebase';
+import React, { useState, useEffect, useRef } from 'react';
+import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch, deleteField } from 'firebase/firestore';
+import { ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
+import { db, storage } from '../../firebase';
 import type {
   Slide, SlideElement, InfoElement, QuestionElement,
   ConfiguratorElement, ConfigCategory, ConfigProduct, QuestionType,
@@ -15,11 +16,111 @@ import {
   FileText, HelpCircle, SlidersHorizontal, Trash2,
   ChevronUp, ChevronDown, X, Check, Layers, Square,
   Users, KeyRound, Unlock, Plus, Trophy,
-  List, BarChart2, AlignLeft, ToggleLeft,
+  List, BarChart2, AlignLeft, ToggleLeft, ImageIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 const uid = () => Math.random().toString(36).slice(2, 10);
+
+// ---- Slide image uploader ----
+
+const SlideImageUploader: React.FC<{
+  slide: Slide;
+  onImageChange: (url: string | undefined) => void;
+}> = ({ slide, onImageChange }) => {
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [uploadError, setUploadError] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const taskRef = useRef<ReturnType<typeof uploadBytesResumable> | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      taskRef.current?.cancel();
+    };
+  }, []);
+
+  const handleFile = (file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    setUploading(true);
+    setUploadError('');
+    setProgress(0);
+    const sRef = storageRef(storage, `slide-images/${slide.id}`);
+    const task = uploadBytesResumable(sRef, file);
+    taskRef.current = task;
+    task.on(
+      'state_changed',
+      snap => {
+        if (mountedRef.current) setProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100));
+      },
+      () => {
+        if (mountedRef.current) { setUploading(false); setUploadError('Upload fallito. Riprova.'); }
+      },
+      async () => {
+        try {
+          const url = await getDownloadURL(task.snapshot.ref);
+          await updateDoc(doc(db, 'slides', slide.id), { imageUrl: url });
+          if (mountedRef.current) { onImageChange(url); setUploading(false); }
+        } catch {
+          if (mountedRef.current) { setUploading(false); setUploadError('Errore nel salvataggio. Riprova.'); }
+        }
+      },
+    );
+  };
+
+  const removeImage = async () => {
+    try {
+      await deleteObject(storageRef(storage, `slide-images/${slide.id}`));
+    } catch { /* il file potrebbe non esistere nello storage */ }
+    await updateDoc(doc(db, 'slides', slide.id), { imageUrl: deleteField() });
+    onImageChange(undefined);
+  };
+
+  if (slide.imageUrl) {
+    return (
+      <div className="ws-slide-image-preview">
+        <img src={slide.imageUrl} alt="" className="ws-slide-image-thumb" />
+        <button className="ws-slide-image-remove" onClick={removeImage} type="button">
+          <X size={12} /> Rimuovi immagine
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="ws-slide-image-upload">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
+      />
+      {uploading ? (
+        <div className="ws-slide-image-uploading">
+          <div className="ws-slide-image-progress-bar">
+            <div className="ws-slide-image-progress-fill" style={{ width: `${progress}%` }} />
+          </div>
+          <span className="ws-slide-image-progress-pct">{progress}%</span>
+        </div>
+      ) : (
+        <>
+          <button
+            className="ws-slide-image-btn"
+            type="button"
+            onClick={() => inputRef.current?.click()}
+          >
+            <ImageIcon size={15} /> Aggiungi immagine di copertina
+          </button>
+          {uploadError && <p className="ws-slide-image-error">{uploadError}</p>}
+        </>
+      )}
+    </div>
+  );
+};
 
 // ---- Element Editors ----
 
@@ -321,11 +422,16 @@ const SlidePreview: React.FC<{ slide: Slide }> = ({ slide }) => (
           </div>
           <div className="ws-slide-inner">
             <div className="ws-slide-header">
-<h1 className="ws-slide-title" style={!slide.title ? { opacity: 0.35, fontStyle: 'italic' } : undefined}>
+              <h1 className="ws-slide-title" style={!slide.title ? { opacity: 0.35, fontStyle: 'italic' } : undefined}>
                 {slide.title || 'Titolo slide'}
               </h1>
             </div>
             <div className="ws-slide-content">
+              {slide.imageUrl && (
+                <div className="ws-slide-image-wrap">
+                  <img src={slide.imageUrl} alt="" className="ws-slide-image" />
+                </div>
+              )}
               {slide.elements.length === 0 ? (
                 <div className="ws-preview-empty">Nessun elemento ancora</div>
               ) : (
@@ -519,6 +625,13 @@ const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
                     <label className="ws-label">Titolo slide</label>
                     <input className="ws-field" type="text" value={editing.title} placeholder="Es. Benvenuto, Modulo 1..."
                       onChange={e => setEditing({ ...editing, title: e.target.value })} />
+                  </div>
+                  <div className="ws-edit-settings-row ws-edit-settings-row--image">
+                    <label className="ws-label">Immagine di copertina</label>
+                    <SlideImageUploader
+                      slide={editing}
+                      onImageChange={url => setEditing(prev => prev ? { ...prev, imageUrl: url } : prev)}
+                    />
                   </div>
                   {last ? (
                     <div className="ws-edit-settings-row ws-edit-settings-row--last">

@@ -1,0 +1,11 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Immagini delle slide: lettura pubblica, scrittura solo autenticata
+    // (il progetto non usa auth → permettiamo write a tutti per ora, come Firestore)
+    match /slide-images/{slideId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}
