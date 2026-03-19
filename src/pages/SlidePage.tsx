@@ -236,6 +236,9 @@ const SlidePage: React.FC = () => {
   useEffect(() => { waitingRef.current = waiting; }, [waiting]);
   useEffect(() => { slideIndexRef.current = slideIndex; }, [slideIndex]);
 
+  // Scroll to top after any screen transition (runs after DOM update)
+  useEffect(() => { window.scrollTo(0, 0); }, [slideIndex, showingRecap, showingLeaderboard, waiting]);
+
   const name = isPreview ? 'Anteprima' : sessionStorage.getItem('ws_name');
 
   useEffect(() => {
@@ -269,14 +272,12 @@ const SlidePage: React.FC = () => {
           leaderboardShownRef.current = true;
           setWaiting(false);
           setShowingLeaderboard(true);
-          window.scrollTo(0, 0);
           return;
         }
         const next = slideIndexRef.current + 1;
         setSlideIndex(next);
         sessionStorage.setItem('ws_slide', String(next));
         setWaiting(false);
-        window.scrollTo(0, 0);
       }
     });
   }, []);
@@ -303,7 +304,6 @@ const SlidePage: React.FC = () => {
     setShowPin(false);
     setPinError('');
     setShowingRecap(false);
-    window.scrollTo(0, 0);
   };
 
   const handleModeratedAdvance = () => {
@@ -313,14 +313,12 @@ const SlidePage: React.FC = () => {
       if (quizWithLeaderboard && !leaderboardShownRef.current) {
         leaderboardShownRef.current = true;
         setShowingLeaderboard(true);
-        window.scrollTo(0, 0);
       } else {
         advanceSlide(answers);
       }
     } else {
       saveProgress(answers);
       setWaiting(true);
-      window.scrollTo(0, 0);
     }
   };
 
@@ -330,7 +328,6 @@ const SlidePage: React.FC = () => {
       setPinError('');
       if (slides[slideIndex].showRecap) {
         setShowingRecap(true);
-        window.scrollTo(0, 0);
       } else {
         advanceSlide(answers);
       }

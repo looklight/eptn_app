@@ -35,6 +35,7 @@
 
 .ws-slide-page {
   min-height: calc(100vh - 56px);
+  min-height: calc(100dvh - 56px);
   background: var(--ws-bg);
   display: flex;
   flex-direction: column;
