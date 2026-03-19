@@ -92,19 +92,17 @@
 /* ---- Element types on slide ---- */
 
 .ws-el-info {
-  background: var(--ws-card);
-  border-radius: var(--ws-radius);
-  padding: 20px 24px;
-  border-left: 3px solid var(--ws-teal);
-  box-shadow: 0 1px 4px rgba(0,0,40,0.07);
+  padding: 4px 0;
 }
 
 .ws-el-info-content {
   color: var(--ws-navy);
-  font-size: 15px;
-  line-height: 1.65;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.7;
   margin: 0;
   white-space: pre-wrap;
+  opacity: 0.85;
 }
 
 .ws-el-question {
