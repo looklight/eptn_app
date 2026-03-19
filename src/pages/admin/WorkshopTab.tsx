@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Circle, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { CheckCircle2, Circle, Check, Download } from 'lucide-react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { QRCodeCanvas } from 'qrcode.react';
 import { db } from '../../firebase';
 import type { Workshop } from '../../types';
 
@@ -8,6 +9,16 @@ const WorkshopTab: React.FC = () => {
   const [workshop, setWorkshop] = useState<Workshop>({ name: 'EP Workshop', isActive: false });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const qrRef = useRef<HTMLCanvasElement>(null);
+
+  const downloadQR = () => {
+    const canvas = qrRef.current;
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = 'qr-workshop.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
 
   useEffect(() => {
     return onSnapshot(doc(db, 'workshop', 'config'), snap => {
@@ -63,6 +74,12 @@ const WorkshopTab: React.FC = () => {
           <span className="ws-link-text">{url}</span>
           <button className="ws-btn ws-btn-secondary ws-btn-sm" onClick={() => navigator.clipboard.writeText(url)}>
             Copia
+          </button>
+        </div>
+        <div className="ws-qr-section">
+          <QRCodeCanvas ref={qrRef} value={url} size={160} marginSize={2} />
+          <button className="ws-btn ws-btn-secondary ws-btn-sm" onClick={downloadQR} style={{ marginTop: 12 }}>
+            <Download size={13} /> Scarica PNG
           </button>
         </div>
       </div>

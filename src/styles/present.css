@@ -265,6 +265,40 @@
   margin-bottom: 10px;
 }
 
+/* Join card with QR */
+
+.ws-present-join-card {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background: var(--ws-card);
+  border-radius: var(--ws-radius-md);
+  box-shadow: var(--ws-shadow);
+  padding: 24px 28px;
+  border-left: 4px solid var(--ws-teal);
+}
+
+.ws-present-join-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ws-present-join-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--ws-teal);
+}
+
+.ws-present-join-url {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ws-navy);
+  letter-spacing: -0.3px;
+}
+
 .ws-present-loading {
   display: flex;
   align-items: center;

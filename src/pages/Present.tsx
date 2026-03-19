@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { collection, onSnapshot, query, orderBy, getDocs, doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Slide, WorkshopResponse, ConfigAnswer, QuizAnswer } from '../types';
@@ -77,6 +78,14 @@ const Present: React.FC = () => {
       </div>
 
       <div className="ws-present-body">
+        <div className="ws-present-join-card">
+          <QRCodeSVG value={window.location.origin + '/'} size={96} />
+          <div className="ws-present-join-info">
+            <span className="ws-present-join-label">Partecipa al workshop</span>
+            <span className="ws-present-join-url">{window.location.origin}/</span>
+          </div>
+        </div>
+
         {sorted.map(slide => {
           const interactive = slide.elements.filter(el => el.type !== 'info');
           if (interactive.length === 0) return null;
