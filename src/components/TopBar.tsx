@@ -11,6 +11,8 @@ const TopBar: React.FC = () => {
             <text x="0" y="16" fontFamily="'Segoe UI', sans-serif" fontSize="18" fontWeight="700" fill="white">SIEMENS</text>
           </svg>
         </span>
+        <span className="topbar-divider" />
+        <span className="topbar-title">Emotion in Automation</span>
         {slot}
       </div>
     </nav>
