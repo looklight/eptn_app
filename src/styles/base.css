@@ -1,9 +1,24 @@
 *, *::before, *::after { box-sizing: border-box; }
 
+html {
+  overflow-x: hidden;
+}
+
 body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
   font-family: var(--ws-font);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ---- Reset for workshop buttons ---- */
