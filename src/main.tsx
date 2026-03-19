@@ -1,6 +1,6 @@
 import React, { Suspense, lazy } from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import Landing from "./pages/Landing";
 import SlidePage from "./pages/SlidePage";
@@ -14,12 +14,11 @@ const AdminPage = lazy(() => import("./pages/admin/AdminPage"));
 
 import './styles/index.css';
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <ErrorBoundary>
-    <TopBarProvider>
-    <BrowserRouter>
-      <TopBar />
+const AppLayout: React.FC = () => {
+  const location = useLocation();
+  return (
+    <>
+      {location.pathname !== '/present' && <TopBar />}
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/slide" element={<SlidePage />} />
@@ -32,6 +31,16 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+    </>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <ErrorBoundary>
+    <TopBarProvider>
+    <BrowserRouter>
+      <AppLayout />
     </BrowserRouter>
     </TopBarProvider>
     </ErrorBoundary>

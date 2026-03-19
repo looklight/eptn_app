@@ -7,8 +7,8 @@ import type { Workshop } from '../../types';
 
 const WorkshopTab: React.FC = () => {
   const [workshop, setWorkshop] = useState<Workshop>({ name: 'EP Workshop', isActive: false });
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [savingName, setSavingName] = useState(false);
+  const [savedName, setSavedName] = useState(false);
   const qrRef = useRef<HTMLCanvasElement>(null);
 
   const downloadQR = () => {
@@ -26,12 +26,17 @@ const WorkshopTab: React.FC = () => {
     });
   }, []);
 
-  const save = async () => {
-    setSaving(true);
-    await setDoc(doc(db, 'workshop', 'config'), workshop);
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const saveName = async () => {
+    setSavingName(true);
+    await setDoc(doc(db, 'workshop', 'config'), { name: workshop.name }, { merge: true });
+    setSavingName(false);
+    setSavedName(true);
+    setTimeout(() => setSavedName(false), 2000);
+  };
+
+  const toggleField = async (field: 'isActive' | 'showLobby', value: boolean) => {
+    setWorkshop(prev => ({ ...prev, [field]: value }));
+    await setDoc(doc(db, 'workshop', 'config'), { [field]: value }, { merge: true });
   };
 
   const url = window.location.origin + '/';
@@ -42,17 +47,26 @@ const WorkshopTab: React.FC = () => {
         <h3 className="ws-add-title">Impostazioni workshop</h3>
 
         <label className="ws-label">Nome workshop</label>
-        <input
-          className="ws-field"
-          type="text"
-          value={workshop.name}
-          onChange={e => setWorkshop({ ...workshop, name: e.target.value })}
-          placeholder="Es. EP Workshop Q1 2026"
-        />
+        <div className="ws-name-save-row">
+          <input
+            className="ws-field"
+            type="text"
+            value={workshop.name}
+            onChange={e => setWorkshop({ ...workshop, name: e.target.value })}
+            onKeyDown={e => e.key === 'Enter' && saveName()}
+            placeholder="Es. EP Workshop Q1 2026"
+          />
+          <button className="ws-btn ws-btn-primary ws-btn-sm" onClick={saveName} disabled={savingName}>
+            {savedName ? <><Check size={13} /> Salvato</> : 'Salva'}
+          </button>
+        </div>
 
         <label className="ws-label">Stato accesso partecipanti</label>
         <div className="ws-toggle-row">
-          <button className={`ws-toggle-btn ${workshop.isActive ? 'active' : ''}`} onClick={() => setWorkshop({ ...workshop, isActive: !workshop.isActive })}>
+          <button
+            className={`ws-toggle-btn ${workshop.isActive ? 'active' : ''}`}
+            onClick={() => toggleField('isActive', !workshop.isActive)}
+          >
             <span className="ws-toggle-dot" />
           </button>
           <span className="ws-toggle-label">
@@ -61,10 +75,6 @@ const WorkshopTab: React.FC = () => {
               : <><Circle size={14} /> Workshop inattivo</>}
           </span>
         </div>
-
-        <button className="ws-btn ws-btn-primary" onClick={save} disabled={saving} style={{ marginTop: 8 }}>
-          {saving ? 'Salvataggio...' : saved ? <><Check size={14} /> Salvato</> : 'Salva impostazioni'}
-        </button>
       </div>
 
       <div className="ws-add-card">
@@ -81,6 +91,23 @@ const WorkshopTab: React.FC = () => {
           <button className="ws-btn ws-btn-secondary ws-btn-sm" onClick={downloadQR} style={{ marginTop: 12 }}>
             <Download size={13} /> Scarica PNG
           </button>
+        </div>
+
+        <div className="ws-lobby-toggle-section">
+          <label className="ws-label">Schermata lobby iniziale</label>
+          <div className="ws-toggle-row">
+            <button
+              className={`ws-toggle-btn ${(workshop.showLobby ?? true) ? 'active' : ''}`}
+              onClick={() => toggleField('showLobby', !(workshop.showLobby ?? true))}
+            >
+              <span className="ws-toggle-dot" />
+            </button>
+            <span className="ws-toggle-label">
+              {(workshop.showLobby ?? true)
+                ? <><CheckCircle2 size={14} /> Mostra QR e lobby prima delle slide</>
+                : <><Circle size={14} /> Inizia direttamente dalla prima slide</>}
+            </span>
+          </div>
         </div>
       </div>
     </div>
