@@ -10,9 +10,8 @@ const TopBar: React.FC = () => {
           <svg width="108" height="20" viewBox="0 0 108 20" xmlns="http://www.w3.org/2000/svg">
             <text x="0" y="16" fontFamily="'Segoe UI', sans-serif" fontSize="18" fontWeight="700" fill="white">SIEMENS</text>
           </svg>
+          <span className="topbar-subtitle">Emotion in Automation</span>
         </span>
-        <span className="topbar-divider" />
-        <span className="topbar-title">Emotion in Automation</span>
         {slot}
       </div>
     </nav>
