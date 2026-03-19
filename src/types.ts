@@ -14,6 +14,7 @@ export type QuestionElement = {
   options?: string[];
   scaleMin?: number;
   scaleMax?: number;
+  multipleSelect?: boolean;
 };
 
 export type ConfigProduct = {
@@ -38,24 +39,47 @@ export type ConfiguratorElement = {
   categories: ConfigCategory[];
 };
 
-export type SlideElement = InfoElement | QuestionElement | ConfiguratorElement;
+export type QuizElement = {
+  id: string;
+  type: 'quiz';
+  text: string;
+  options: string[];
+  correctAnswer: number;
+  timeLimit?: number;       // secondi
+  showLeaderboard?: boolean; // mostra classifica cumulativa dopo questa slide
+};
+
+export type SlideElement = InfoElement | QuestionElement | ConfiguratorElement | QuizElement;
+
+export type SlideMode = 'moderated' | 'pin' | 'autonomous';
 
 export type Slide = {
   id: string;
   order: number;
   title: string;
   pin: string;
+  requiresPin?: boolean; // legacy
+  mode?: SlideMode;
   elements: SlideElement[];
   showRecap?: boolean;
+};
+
+export const getSlideMode = (slide: Slide): SlideMode => {
+  if (slide.mode) return slide.mode;
+  // Retrocompatibilità con slide salvate prima del campo mode
+  if (slide.requiresPin ?? slide.pin !== '') return 'pin';
+  return 'moderated';
 };
 
 export type Workshop = {
   name: string;
   isActive: boolean;
+  currentSlide?: number;
 };
 
 export type ConfigAnswer = Record<string, string | null>;
-export type AnswerValue = string | number | boolean | ConfigAnswer;
+export type QuizAnswer = { answer: number; responseTimeMs: number };
+export type AnswerValue = string | string[] | number | boolean | ConfigAnswer | QuizAnswer;
 export type Answers = Record<string, AnswerValue>;
 
 export type WorkshopResponse = {

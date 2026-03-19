@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Check } from 'lucide-react';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Slide, AnswerValue, ConfigAnswer } from '../types';
@@ -30,7 +31,7 @@ const Summary: React.FC = () => {
   return (
     <div className="ws-summary-page">
       <div className="ws-summary-header">
-        <div className="ws-thankyou-icon">✓</div>
+        <div className="ws-thankyou-icon"><Check size={30} strokeWidth={2.5} /></div>
         <h1 className="ws-title">Il tuo riepilogo</h1>
         <div className="ws-thankyou-bar" />
         <p className="ws-subtitle">Grazie per aver partecipato, <strong>{name}</strong>!</p>
@@ -50,7 +51,7 @@ const Summary: React.FC = () => {
                 if (answer === undefined) return null;
 
                 if (el.type === 'question') {
-                  const display = typeof answer === 'boolean' ? (answer ? 'Sì' : 'No') : String(answer);
+                  const display = typeof answer === 'boolean' ? (answer ? 'Sì' : 'No') : Array.isArray(answer) ? (answer as string[]).join(', ') : String(answer);
                   return (
                     <div key={el.id} className="ws-response-item">
                       <span className="ws-response-question">{el.text}</span>

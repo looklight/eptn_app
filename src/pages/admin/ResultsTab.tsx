@@ -6,6 +6,7 @@ import type { Slide, WorkshopResponse, AnswerValue, ConfigAnswer } from '../../t
 function formatAnswer(answer: AnswerValue, slide: Slide): React.ReactNode {
   if (answer === undefined || answer === null) return '—';
   if (typeof answer === 'boolean') return answer ? 'Sì' : 'No';
+  if (Array.isArray(answer)) return (answer as string[]).join(', ');
   if (typeof answer === 'object') {
     const config = answer as ConfigAnswer;
     return (

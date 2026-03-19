@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy, getDocs } from 'firebase/firestore';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { collection, onSnapshot, query, orderBy, getDocs, doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import type { Slide, WorkshopResponse, ConfigAnswer } from '../types';
+import type { Slide, WorkshopResponse, ConfigAnswer, QuizAnswer } from '../types';
+import { getSlideMode } from '../types';
 
 const Present: React.FC = () => {
   const [slides, setSlides] = useState<Slide[]>([]);
   const [responses, setResponses] = useState<WorkshopResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentSlide, setCurrentSlide] = useState<number>(0);
 
   useEffect(() => {
     const loadSlides = async () => {
@@ -16,18 +19,32 @@ const Present: React.FC = () => {
       setLoading(false);
     };
     loadSlides();
-    return onSnapshot(collection(db, 'responses'), snap =>
+    const unsubResponses = onSnapshot(collection(db, 'responses'), snap =>
       setResponses(snap.docs.map(d => ({ id: d.id, ...d.data() } as WorkshopResponse)))
     );
+    const unsubConfig = onSnapshot(doc(db, 'workshop', 'config'), snap => {
+      const data = snap.data();
+      if (data?.currentSlide !== undefined) {
+        setCurrentSlide(data.currentSlide as number);
+      }
+    });
+    return () => { unsubResponses(); unsubConfig(); };
   }, []);
+
+  const setAdminSlide = (idx: number) => {
+    setDoc(doc(db, 'workshop', 'config'), { currentSlide: idx }, { merge: true }).catch(console.error);
+  };
+
+  const sorted = useMemo(() => [...slides].sort((a, b) => a.order - b.order), [slides]);
+  const hasModerated = useMemo(() => sorted.some(s => getSlideMode(s) === 'moderated'), [sorted]);
 
   if (loading) return (
     <div className="ws-present-loading">Caricamento...</div>
   );
 
-  const sorted = [...slides].sort((a, b) => a.order - b.order);
   const complete = responses.filter(r => !r.partial).length;
   const inProgress = responses.filter(r => r.partial).length;
+  const currentSlideTitle = sorted[currentSlide]?.title ?? '';
 
   return (
     <div className="ws-present">
@@ -36,7 +53,27 @@ const Present: React.FC = () => {
           {complete} {complete === 1 ? 'risposta completa' : 'risposte complete'}
           {inProgress > 0 && <span style={{ opacity: 0.6 }}> · {inProgress} in corso</span>}
         </span>
-        <span className="ws-present-live">● Live</span>
+        {hasModerated && (
+          <div className="ws-present-nav">
+            <button
+              className="ws-present-nav-btn"
+              disabled={currentSlide <= 0}
+              onClick={() => setAdminSlide(currentSlide - 1)}
+              title="Slide precedente"
+            ><ChevronLeft size={16} /></button>
+            <span className="ws-present-nav-label">
+              Slide {currentSlide + 1} di {sorted.length}
+              {currentSlideTitle && <span className="ws-present-nav-title"> · {currentSlideTitle}</span>}
+            </span>
+            <button
+              className="ws-present-nav-btn"
+              disabled={currentSlide >= sorted.length - 1}
+              onClick={() => setAdminSlide(currentSlide + 1)}
+              title="Slide successiva"
+            ><ChevronRight size={16} /></button>
+          </div>
+        )}
+        <span className="ws-present-live"><span className="ws-live-dot" />Live</span>
       </div>
 
       <div className="ws-present-body">
@@ -65,8 +102,9 @@ const Present: React.FC = () => {
                     const counts: Record<string, number> = {};
                     (el.options || []).forEach(o => { counts[o] = 0; });
                     answered.forEach(r => {
-                      const v = r.answers[el.id] as string;
-                      if (v in counts) counts[v]++;
+                      const v = r.answers[el.id];
+                      const vals = Array.isArray(v) ? v as string[] : [v as string];
+                      vals.forEach(val => { if (val in counts) counts[val]++; });
                     });
                     const max = Math.max(...Object.values(counts), 1);
                     return (
@@ -152,6 +190,71 @@ const Present: React.FC = () => {
                         <div className="ws-present-text-count">
                           {count} {count === 1 ? 'risposta ricevuta' : 'risposte ricevute'}
                         </div>
+                      </div>
+                    );
+                  }
+
+                  /* Quiz */
+                  if (el.type === 'quiz') {
+                    const counts = Array(el.options.length).fill(0) as number[];
+                    let correctCount = 0;
+                    let totalCorrectMs = 0;
+                    answered.forEach(r => {
+                      const qa = r.answers[el.id] as QuizAnswer;
+                      if (qa && typeof qa === 'object' && 'responseTimeMs' in qa) {
+                        if (qa.answer >= 0 && qa.answer < counts.length) counts[qa.answer]++;
+                        if (qa.answer === el.correctAnswer) { correctCount++; totalCorrectMs += qa.responseTimeMs; }
+                      }
+                    });
+                    const maxCount = Math.max(...counts, 1);
+                    const avgMs = correctCount > 0 ? totalCorrectMs / correctCount : 0;
+                    const topRanking = answered
+                      .filter(r => { const qa = r.answers[el.id] as QuizAnswer; return qa && 'responseTimeMs' in qa && qa.answer === el.correctAnswer; })
+                      .map(r => ({ name: r.name, id: r.id, ms: (r.answers[el.id] as QuizAnswer).responseTimeMs }))
+                      .sort((a, b) => a.ms - b.ms);
+                    return (
+                      <div key={el.id} className="ws-present-el">
+                        <div className="ws-present-el-label">{el.text}</div>
+                        <div className="ws-present-el-meta">
+                          {count} risposte · {correctCount} corrette ({Math.round((correctCount / count) * 100)}%)
+                          {avgMs > 0 && <> · media {(avgMs / 1000).toFixed(1)}s</>}
+                        </div>
+                        <div className="ws-present-bars">
+                          {el.options.map((opt, i) => (
+                            <div key={i} className="ws-present-bar-row">
+                              <span className="ws-present-bar-label">
+                                {i === el.correctAnswer ? '✓ ' : ''}{opt}
+                              </span>
+                              <div className="ws-present-bar-track">
+                                <div
+                                  className={`ws-present-bar-fill${i === el.correctAnswer ? ' ws-present-bar-fill--correct' : ''}`}
+                                  style={{ width: `${(counts[i] / maxCount) * 100}%` }}
+                                />
+                              </div>
+                              <span className="ws-present-bar-val">
+                                {counts[i]} <span className="ws-present-bar-pct">({Math.round((counts[i] / count) * 100)}%)</span>
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        {topRanking.length > 0 && (
+                          <div className="ws-present-quiz-leaderboard">
+                            <div className="ws-present-quiz-leaderboard-title">🏆 Classifica — risposte corrette</div>
+                            {topRanking.slice(0, 5).map((e, i) => (
+                              <div key={e.id} className="ws-present-lb-row">
+                                <span className="ws-present-lb-rank">#{i + 1}</span>
+                                <span className="ws-present-lb-name">{e.name}</span>
+                                <span className="ws-present-lb-time">{(e.ms / 1000).toFixed(1)}s</span>
+                              </div>
+                            ))}
+                            {topRanking.length > 5 && (
+                              <div className="ws-present-lb-row" style={{ opacity: 0.5 }}>
+                                <span className="ws-present-lb-rank">···</span>
+                                <span className="ws-present-lb-name">+{topRanking.length - 5} altri</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { CheckCircle2, Circle, Check } from 'lucide-react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import type { Workshop } from '../../types';
@@ -44,12 +45,14 @@ const WorkshopTab: React.FC = () => {
             <span className="ws-toggle-dot" />
           </button>
           <span className="ws-toggle-label">
-            {workshop.isActive ? '● Workshop attivo — i partecipanti possono accedere' : '○ Workshop inattivo'}
+            {workshop.isActive
+              ? <><CheckCircle2 size={14} /> Workshop attivo — i partecipanti possono accedere</>
+              : <><Circle size={14} /> Workshop inattivo</>}
           </span>
         </div>
 
         <button className="ws-btn ws-btn-primary" onClick={save} disabled={saving} style={{ marginTop: 8 }}>
-          {saving ? 'Salvataggio...' : saved ? '✓ Salvato' : 'Salva impostazioni'}
+          {saving ? 'Salvataggio...' : saved ? <><Check size={14} /> Salvato</> : 'Salva impostazioni'}
         </button>
       </div>
 

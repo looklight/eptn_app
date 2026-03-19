@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Play, Eye } from 'lucide-react';
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { db } from '../../firebase';
 import type { Slide } from '../../types';
 import WorkshopTab from './WorkshopTab';
 import SlidesTab from './SlidesTab';
 import ResultsTab from './ResultsTab';
+import { useTopBarSlot } from '../../components/TopBarContext';
 
 const AdminPage: React.FC = () => {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('ep_admin_auth') === '1');
@@ -12,6 +14,7 @@ const AdminPage: React.FC = () => {
   const [pwError, setPwError] = useState('');
   const [tab, setTab] = useState<'workshop' | 'slides' | 'results'>('workshop');
   const [slides, setSlides] = useState<Slide[]>([]);
+  const setSlot = useTopBarSlot();
 
   useEffect(() => {
     if (!authed) return;
@@ -30,11 +33,44 @@ const AdminPage: React.FC = () => {
     }
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
     sessionStorage.removeItem('ep_admin_auth');
     setAuthed(false);
     setPw('');
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!authed) {
+      setSlot(null);
+      return;
+    }
+    setSlot(
+      <>
+        <span className="topbar-admin-sep" />
+        <div className="topbar-admin-tabs">
+          <button className={`topbar-admin-tab${tab === 'workshop' ? ' active' : ''}`} onClick={() => setTab('workshop')}>
+            Workshop
+          </button>
+          <button className={`topbar-admin-tab${tab === 'slides' ? ' active' : ''}`} onClick={() => setTab('slides')}>
+            Slide ({slides.length})
+          </button>
+          <button className={`topbar-admin-tab${tab === 'results' ? ' active' : ''}`} onClick={() => setTab('results')}>
+            Risultati
+          </button>
+        </div>
+        <div className="topbar-admin-actions">
+          <button className="topbar-admin-btn" onClick={() => window.open('/slide?preview=1', '_blank')}>
+            <Eye size={12} /> Anteprima
+          </button>
+          <button className="topbar-admin-btn" onClick={() => window.open('/present', '_blank')}>
+            <Play size={12} /> Presentatore
+          </button>
+          <button className="topbar-admin-btn" onClick={logout}>Esci</button>
+        </div>
+      </>
+    );
+    return () => setSlot(null);
+  }, [authed, tab, slides.length, logout, setSlot]);
 
   if (!authed) {
     return (
@@ -61,27 +97,6 @@ const AdminPage: React.FC = () => {
 
   return (
     <div className="ws-admin-page">
-      <div className="ws-admin-header">
-        <h1 className="ws-admin-title">Admin</h1>
-        <button className="ws-btn ws-btn-secondary ws-btn-sm"
-          onClick={() => window.open('/present', '_blank')}>
-          ▶ Presentatore
-        </button>
-        <button className="ws-btn ws-btn-secondary ws-btn-sm" onClick={logout}>Esci</button>
-      </div>
-
-      <div className="ws-tabs">
-        <button className={`ws-tab-btn${tab === 'workshop' ? ' active' : ''}`} onClick={() => setTab('workshop')}>
-          Workshop
-        </button>
-        <button className={`ws-tab-btn${tab === 'slides' ? ' active' : ''}`} onClick={() => setTab('slides')}>
-          Slide ({slides.length})
-        </button>
-        <button className={`ws-tab-btn${tab === 'results' ? ' active' : ''}`} onClick={() => setTab('results')}>
-          Risultati
-        </button>
-      </div>
-
       <div className="ws-tab-content">
         {tab === 'workshop' && <WorkshopTab />}
         {tab === 'slides' && <SlidesTab slides={slides} />}

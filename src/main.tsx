@@ -8,14 +8,16 @@ import Summary from "./pages/Summary";
 import Present from "./pages/Present";
 import TopBar from "./components/TopBar";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { TopBarProvider } from "./components/TopBarContext";
 
 const AdminPage = lazy(() => import("./pages/admin/AdminPage"));
 
-import './workshop.css';
+import './styles/index.css';
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ErrorBoundary>
+    <TopBarProvider>
     <BrowserRouter>
       <TopBar />
       <Routes>
@@ -31,6 +33,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
+    </TopBarProvider>
     </ErrorBoundary>
   </React.StrictMode>
 );

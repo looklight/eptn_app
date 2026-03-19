@@ -1,0 +1,49 @@
+/* =============================================
+   WORKSHOP STYLES — ws- prefix
+   ============================================= */
+
+:root {
+  /* ── Brand ── */
+  --ws-teal:            #009999;
+  --ws-teal-dark:       #007777;
+  --ws-teal-light:      #e6f7f7;
+  --ws-teal-border:     #99d6d6;
+  --ws-navy:            #000028;
+
+  /* ── Status ── */
+  --ws-success:         #007A33;
+  --ws-success-dark:    #005F27;
+  --ws-success-light:   #e8f5ed;
+  --ws-danger:          #B81414;
+  --ws-danger-light:    #fdf0f0;
+  --ws-danger-border:   #fcd5d5;
+  --ws-warning:         #d97706;
+  --ws-warning-light:   #fffbeb;
+  --ws-warning-hover:   #fef3c7;
+  --ws-warning-border:  #fde68a;
+
+  /* ── Element types ── */
+  --ws-info:            #6366f1;
+  --ws-info-light:      #eef2ff;
+  --ws-info-hover:      #e0e7ff;
+  --ws-info-border:     #c7d2fe;
+
+  /* ── UI ── */
+  --ws-muted:           #66667E;
+  --ws-border:          #DCDCE4;
+  --ws-card:            #FFFFFF;
+  --ws-bg:              #F3F3F0;
+
+  /* ── Typography ── */
+  --ws-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* ── Shape ── */
+  --ws-radius:          4px;
+  --ws-radius-md:       8px;
+
+  /* ── Shadows ── */
+  --ws-shadow:          0 2px 12px rgba(0, 0, 40, 0.10);
+  --ws-shadow-sm:       0 1px 4px rgba(0, 0, 40, 0.07);
+  --ws-shadow-lg:       0 8px 40px rgba(0, 0, 40, 0.25);
+  --ws-shadow-teal:     0 3px 12px rgba(0, 153, 153, 0.12);
+}

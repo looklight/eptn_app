@@ -7,17 +7,31 @@ type Props = {
   onChange: (v: AnswerValue) => void;
 };
 
-const QuestionEl: React.FC<Props> = ({ element, value, onChange }) => (
+const QuestionEl: React.FC<Props> = ({ element, value, onChange }) => {
+  const selected = Array.isArray(value) ? value as string[] : [];
+  const toggleMulti = (opt: string) => {
+    const next = selected.includes(opt) ? selected.filter(s => s !== opt) : [...selected, opt];
+    onChange(next);
+  };
+
+  return (
   <div className="ws-el-question">
     <h3 className="ws-question">{element.text}</h3>
 
     {element.questionType === 'multiple_choice' && (
       <div className="ws-options">
-        {(element.options || []).map((opt, i) => (
-          <button key={i} className={`ws-option-btn ${value === opt ? 'selected' : ''}`} onClick={() => onChange(opt)}>
-            {opt}
-          </button>
-        ))}
+        {(element.options || []).map((opt, i) => {
+          const letter = String.fromCharCode(65 + i);
+          const isSelected = element.multipleSelect ? selected.includes(opt) : value === opt;
+          return (
+            <button key={i}
+              className={`ws-option-btn ${isSelected ? 'selected' : ''}`}
+              onClick={() => element.multipleSelect ? toggleMulti(opt) : onChange(opt)}>
+              <span className="ws-option-letter">{letter}</span>
+              {opt}
+            </button>
+          );
+        })}
       </div>
     )}
 
@@ -49,6 +63,7 @@ const QuestionEl: React.FC<Props> = ({ element, value, onChange }) => (
       </div>
     )}
   </div>
-);
+  );
+};
 
 export default QuestionEl;

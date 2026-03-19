@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -55,7 +56,7 @@ const Landing: React.FC = () => {
               autoFocus
             />
             <button className="ws-btn ws-btn-primary ws-btn-full" onClick={handleStart} disabled={!name.trim()}>
-              Partecipa →
+              Partecipa <ArrowRight size={16} />
             </button>
           </>
         )}

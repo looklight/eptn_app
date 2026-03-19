@@ -1,0 +1,367 @@
+/* ================================================
+   PRESENTER VIEW (/present)
+   ================================================ */
+
+.ws-present {
+  min-height: calc(100vh - 56px);
+  background: var(--ws-bg);
+}
+
+.ws-present-topbar {
+  background: var(--ws-navy);
+  color: white;
+  padding: 12px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 56px;
+  z-index: 5;
+}
+
+.ws-present-count {
+  font-size: 15px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.ws-present-live {
+  font-size: 13px;
+  font-weight: 700;
+  color: #4ade80;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ws-live-dot {
+  width: 7px;
+  height: 7px;
+  background: currentColor;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ws-present-body {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 36px 24px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.ws-present-section {
+  background: var(--ws-card);
+  border-radius: var(--ws-radius-md);
+  box-shadow: var(--ws-shadow);
+  overflow: hidden;
+}
+
+.ws-present-section-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: white;
+  background: var(--ws-navy);
+  padding: 12px 24px;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.ws-present-elements {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.ws-present-el {
+  padding: 24px;
+  border-bottom: 1px solid var(--ws-border);
+}
+.ws-present-el:last-child { border-bottom: none; }
+
+.ws-present-el-label {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ws-navy);
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.ws-present-el-meta {
+  font-size: 13px;
+  color: var(--ws-muted);
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.ws-present-no-data {
+  font-size: 14px;
+  color: var(--ws-muted);
+  font-style: italic;
+  margin-top: 6px;
+}
+
+/* Bar charts */
+
+.ws-present-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ws-present-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ws-present-bar-label {
+  font-size: 14px;
+  color: var(--ws-navy);
+  font-weight: 500;
+  width: 180px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ws-present-bar-track {
+  flex: 1;
+  height: 28px;
+  background: var(--ws-bg);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ws-present-bar-fill {
+  height: 100%;
+  background: var(--ws-teal);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+  min-width: 2px;
+}
+
+.ws-present-bar-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ws-navy);
+  width: 80px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.ws-present-bar-pct {
+  font-weight: 400;
+  color: var(--ws-muted);
+}
+
+/* Scale column chart */
+
+.ws-present-scale-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 120px;
+  padding-bottom: 0;
+}
+
+.ws-present-scale-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  height: 100%;
+}
+
+.ws-present-scale-bar-wrap {
+  flex: 1;
+  width: 100%;
+  background: var(--ws-bg);
+  border-radius: 4px 4px 0 0;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.ws-present-scale-bar-fill {
+  width: 100%;
+  background: var(--ws-teal);
+  border-radius: 4px 4px 0 0;
+  transition: height 0.5s ease;
+  min-height: 2px;
+}
+
+.ws-present-scale-num {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ws-muted);
+  margin-top: 6px;
+}
+
+.ws-present-scale-count {
+  font-size: 12px;
+  color: var(--ws-muted);
+}
+
+/* Yes / No */
+
+.ws-present-yesno {
+  display: flex;
+  border-radius: var(--ws-radius);
+  overflow: hidden;
+  height: 56px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ws-present-yesno-yes {
+  background: var(--ws-success-light);
+  color: var(--ws-success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: flex 0.5s ease;
+  padding: 0 12px;
+}
+
+.ws-present-yesno-no {
+  background: var(--ws-danger-light);
+  color: var(--ws-danger);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: flex 0.5s ease;
+  padding: 0 12px;
+}
+
+/* Text count */
+
+.ws-present-text-count {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--ws-teal);
+  margin-top: 6px;
+}
+
+/* Configurator */
+
+.ws-present-config-cat {
+  margin-bottom: 20px;
+}
+.ws-present-config-cat:last-child { margin-bottom: 0; }
+
+.ws-present-config-cat-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ws-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  margin-bottom: 10px;
+}
+
+.ws-present-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 56px);
+  color: var(--ws-muted);
+  font-size: 15px;
+}
+
+.ws-present-empty {
+  text-align: center;
+  color: var(--ws-muted);
+  padding: 80px 20px;
+  font-size: 15px;
+}
+
+/* ================================================
+   PRESENT: navigation control
+   ================================================ */
+
+.ws-present-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ws-present-nav-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  white-space: nowrap;
+}
+
+.ws-present-nav-title {
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.ws-present-nav-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: var(--ws-radius);
+  background: rgba(255,255,255,0.1);
+  color: white;
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+  padding: 0;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.ws-present-nav-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.2);
+  border-color: rgba(255,255,255,0.5);
+}
+.ws-present-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ================================================
+   PRESENT: quiz results
+   ================================================ */
+
+.ws-present-bar-fill--correct { background: var(--ws-success) !important; }
+
+.ws-present-quiz-leaderboard {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ws-border);
+}
+
+.ws-present-quiz-leaderboard-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ws-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 10px;
+}
+
+.ws-present-lb-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  margin-bottom: 3px;
+  font-size: 13px;
+}
+.ws-present-lb-row:nth-child(2) { background: #fef9c3; }
+.ws-present-lb-row:nth-child(3) { background: #f8fafc; }
+.ws-present-lb-row:nth-child(4) { background: #fef3c7; }
+
+.ws-present-lb-rank { font-weight: 800; color: var(--ws-muted); width: 24px; flex-shrink: 0; }
+.ws-present-lb-name { flex: 1; color: var(--ws-navy); font-weight: 600; }
+.ws-present-lb-time { font-size: 12px; color: var(--ws-muted); width: 44px; text-align: right; }
+

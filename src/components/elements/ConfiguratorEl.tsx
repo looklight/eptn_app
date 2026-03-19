@@ -1,4 +1,5 @@
 import React from 'react';
+import { Check } from 'lucide-react';
 import type { ConfiguratorElement, ConfigAnswer } from '../../types';
 
 type Props = {
@@ -23,7 +24,7 @@ const ConfiguratorEl: React.FC<Props> = ({ element, value = {}, onChange }) => {
               const selected = value[cat.id] === prod.id;
               return (
                 <div key={prod.id} className={`ws-config-product ${selected ? 'selected' : ''}`} onClick={() => select(cat.id, prod.id)}>
-                  <div className="ws-config-product-check">{selected ? '✓' : ''}</div>
+                  <div className="ws-config-product-check">{selected && <Check size={13} strokeWidth={2.5} />}</div>
                   {prod.icon && <div className="ws-config-product-icon">{prod.icon}</div>}
                   <div className="ws-config-product-info">
                     <div className="ws-config-product-name">{prod.name}</div>

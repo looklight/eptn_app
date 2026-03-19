@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { ArrowRight } from 'lucide-react';
 
 type Props = {
   onConfirm: (pin: string) => void;
@@ -11,6 +12,12 @@ const PinModal: React.FC<Props> = ({ onConfirm, onClose, error }) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { inputRef.current?.focus(); }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const handleSubmit = () => { if (pin.trim()) onConfirm(pin.trim()); };
 
@@ -35,7 +42,7 @@ const PinModal: React.FC<Props> = ({ onConfirm, onClose, error }) => {
         <div className="ws-modal-actions">
           <button className="ws-btn ws-btn-secondary" onClick={onClose}>Annulla</button>
           <button className="ws-btn ws-btn-primary" onClick={handleSubmit} disabled={!pin.trim()}>
-            Conferma →
+            Conferma <ArrowRight size={16} />
           </button>
         </div>
       </div>
