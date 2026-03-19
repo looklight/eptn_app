@@ -90,4 +90,5 @@ export type WorkshopResponse = {
   submittedAt: { seconds: number } | null;
   answers: Answers;
   partial?: boolean;
+  registered?: boolean;
 };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Workshop } from '../types';
 
@@ -19,13 +19,14 @@ const Landing: React.FC = () => {
   const handleStart = () => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    sessionStorage.removeItem('ws_slide');
-    sessionStorage.removeItem('ws_answers');
-    sessionStorage.removeItem('ws_name');
-    sessionStorage.removeItem('ws_session_id');
+    const sessionId = crypto.randomUUID();
+    sessionStorage.setItem('ws_session_id', sessionId);
     sessionStorage.setItem('ws_name', trimmed);
     sessionStorage.setItem('ws_slide', '0');
     sessionStorage.setItem('ws_answers', '{}');
+    setDoc(doc(db, 'responses', sessionId), {
+      name: trimmed, registered: true, partial: true, answers: {},
+    }).catch(console.error);
     navigate('/slide');
   };
 
