@@ -351,8 +351,8 @@ const SlidePage: React.FC = () => {
       await setDoc(doc(db, 'responses', getSessionId()), {
         name, answers, partial: false, submittedAt: serverTimestamp(),
       }, { merge: true });
-      sessionStorage.setItem('ws_summary_answers', JSON.stringify(answers));
       sessionStorage.setItem('ws_summary_name', name || '');
+      sessionStorage.setItem('ws_summary_session_id', getSessionId());
       sessionStorage.removeItem('ws_slide');
       sessionStorage.removeItem('ws_answers');
       sessionStorage.removeItem('ws_name');

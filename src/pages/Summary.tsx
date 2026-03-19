@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
-import type { Slide, AnswerValue, ConfigAnswer } from '../types';
+import type { Slide, WorkshopResponse, QuizAnswer, QuizElement } from '../types';
 
 const Summary: React.FC = () => {
   const [slides, setSlides] = useState<Slide[]>([]);
+  const [responses, setResponses] = useState<WorkshopResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
   const name = sessionStorage.getItem('ws_summary_name') || '';
-  const answers: Record<string, AnswerValue> = (() => {
-    try { return JSON.parse(sessionStorage.getItem('ws_summary_answers') || '{}'); }
-    catch { return {}; }
-  })();
+  const sessionId = sessionStorage.getItem('ws_summary_session_id') || '';
 
   useEffect(() => {
     const load = async () => {
@@ -22,74 +20,85 @@ const Summary: React.FC = () => {
       setLoading(false);
     };
     load();
+    return onSnapshot(collection(db, 'responses'), snap =>
+      setResponses(snap.docs.map(d => ({ id: d.id, ...d.data() } as WorkshopResponse)))
+    );
   }, []);
 
   if (loading) return <div className="ws-page-center"><p style={{ color: 'var(--ws-muted)' }}>Caricamento...</p></div>;
 
   const sorted = [...slides].sort((a, b) => a.order - b.order);
 
+  // Leaderboard quiz
+  const quizBySlide = sorted
+    .map(s => s.elements.filter(e => e.type === 'quiz') as QuizElement[])
+    .filter(qs => qs.length > 0);
+  const hasQuizzes = quizBySlide.length > 0;
+  const totalQuizCount = quizBySlide.reduce((sum, qs) => sum + qs.length, 0);
+  const allQuizIds = new Set(quizBySlide.flat().map(q => q.id));
+
+  type Entry = { name: string; id: string; numCorrect: number; totalMs: number };
+  const entries: Entry[] = responses
+    .filter(r => [...allQuizIds].some(id => r.answers?.[id] !== undefined))
+    .map(r => {
+      let numCorrect = 0;
+      let totalMs = 0;
+      quizBySlide.forEach(quizEls => {
+        let slideMaxMs = 0;
+        quizEls.forEach(q => {
+          const qa = r.answers?.[q.id] as QuizAnswer | undefined;
+          if (qa && typeof qa === 'object' && 'responseTimeMs' in qa) {
+            if (qa.answer === q.correctAnswer) {
+              numCorrect++;
+              slideMaxMs = Math.max(slideMaxMs, qa.responseTimeMs);
+            }
+          }
+        });
+        totalMs += slideMaxMs;
+      });
+      return { name: r.name, id: r.id, numCorrect, totalMs };
+    })
+    .sort((a, b) => b.numCorrect - a.numCorrect || a.totalMs - b.totalMs);
+
+  const myRank = entries.findIndex(e => e.id === sessionId) + 1;
+  const myEntry = entries.find(e => e.id === sessionId);
+
   return (
     <div className="ws-summary-page">
       <div className="ws-summary-header">
         <div className="ws-thankyou-icon"><Check size={30} strokeWidth={2.5} /></div>
-        <h1 className="ws-title">Il tuo riepilogo</h1>
+        <h1 className="ws-title">Grazie, <strong>{name}</strong>!</h1>
         <div className="ws-thankyou-bar" />
-        <p className="ws-subtitle">Grazie per aver partecipato, <strong>{name}</strong>!</p>
+        <p className="ws-subtitle">Hai completato il workshop.</p>
       </div>
 
-      <div className="ws-summary-slides">
-        {sorted.map(slide => {
-          const interactive = slide.elements.filter(el => el.type !== 'info');
-          const hasAnswers = interactive.some(el => answers[el.id] !== undefined);
-          if (!hasAnswers) return null;
-
-          return (
-            <div key={slide.id} className="ws-summary-slide">
-              <h2 className="ws-summary-slide-title">{slide.title}</h2>
-              {interactive.map(el => {
-                const answer = answers[el.id];
-                if (answer === undefined) return null;
-
-                if (el.type === 'question') {
-                  const display = typeof answer === 'boolean' ? (answer ? 'Sì' : 'No') : Array.isArray(answer) ? (answer as string[]).join(', ') : String(answer);
-                  return (
-                    <div key={el.id} className="ws-response-item">
-                      <span className="ws-response-question">{el.text}</span>
-                      <span className="ws-response-answer">{display}</span>
-                    </div>
-                  );
-                }
-
-                if (el.type === 'configurator') {
-                  const config = answer as ConfigAnswer;
-                  const hasSelections = Object.values(config).some(v => v !== null);
-                  if (!hasSelections) return null;
-                  return (
-                    <div key={el.id} className="ws-summary-config">
-                      {el.title && <div className="ws-summary-config-title">{el.title}</div>}
-                      {el.categories.map(cat => {
-                        const prodId = config[cat.id];
-                        if (!prodId) return null;
-                        const prod = cat.products.find(p => p.id === prodId);
-                        if (!prod) return null;
-                        return (
-                          <div key={cat.id} className="ws-response-item">
-                            <span className="ws-response-question">{cat.label}</span>
-                            <span className="ws-response-answer">
-                              {prod.icon && `${prod.icon} `}{prod.name}{prod.price ? ` — €${prod.price}` : ''}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                }
-                return null;
-              })}
-            </div>
-          );
-        })}
-      </div>
+      {hasQuizzes && (
+        <div className="ws-summary-leaderboard">
+          <h2 className="ws-summary-lb-title">🏆 Classifica finale</h2>
+          {myEntry && (
+            <p className="ws-summary-lb-sub">
+              {myEntry.numCorrect === totalQuizCount
+                ? `Perfetto! Sei al ${myRank}° posto`
+                : `${myEntry.numCorrect}/${totalQuizCount} risposte corrette · ${myRank}° posto`}
+            </p>
+          )}
+          <div className="ws-leaderboard">
+            {entries.slice(0, 10).map((entry, i) => (
+              <div key={entry.id} className={`ws-leaderboard-row${entry.id === sessionId ? ' ws-leaderboard-row--me' : ''}`}>
+                <span className="ws-leaderboard-rank">{i + 1}</span>
+                <span className="ws-leaderboard-name">{entry.name}</span>
+                <span className="ws-leaderboard-score">{entry.numCorrect}/{totalQuizCount} ✓</span>
+                <span className="ws-leaderboard-time">{(entry.totalMs / 1000).toFixed(1)}s</span>
+              </div>
+            ))}
+            {entries.length === 0 && (
+              <div className="ws-leaderboard-row" style={{ justifyContent: 'center', color: 'var(--ws-muted)' }}>
+                Nessun risultato disponibile
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

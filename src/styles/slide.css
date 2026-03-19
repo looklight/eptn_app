@@ -424,6 +424,27 @@
 
 .ws-thankyou-bar { width: 48px; height: 3px; background: var(--ws-teal); margin: 20px auto; }
 
+.ws-summary-leaderboard {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 16px 48px;
+}
+
+.ws-summary-lb-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ws-navy);
+  text-align: center;
+  margin: 0 0 8px;
+}
+
+.ws-summary-lb-sub {
+  text-align: center;
+  color: var(--ws-muted);
+  font-size: 14px;
+  margin: 0 0 20px;
+}
+
 .ws-summary-slides {
   max-width: 600px;
   margin: 0 auto;

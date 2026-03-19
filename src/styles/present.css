@@ -373,6 +373,7 @@
   color: var(--ws-muted);
   font-style: italic;
   margin-top: 6px;
+  text-align: center;
 }
 
 .ws-present-info-els {
@@ -532,6 +533,7 @@
   font-weight: 800;
   color: var(--ws-teal);
   margin-top: 6px;
+  text-align: center;
 }
 
 /* ── Configurator ── */
@@ -548,6 +550,7 @@
   text-transform: uppercase;
   letter-spacing: 0.7px;
   margin-bottom: 10px;
+  text-align: center;
 }
 
 
@@ -704,12 +707,17 @@
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid var(--ws-border);
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
 }
 
 .ws-present-quiz-leaderboard-title {
   font-size: 11px;
   font-weight: 800;
   color: var(--ws-muted);
+  text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.8px;
   margin-bottom: 10px;

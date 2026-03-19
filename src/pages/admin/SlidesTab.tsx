@@ -547,6 +547,7 @@ const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
     if (!confirm('Eliminare questa slide?')) return;
     await deleteDoc(doc(db, 'slides', id));
     if (editing?.id === id) setEditing(null);
+    try { await deleteObject(storageRef(storage, `slide-images/${id}`)); } catch { /* nessuna immagine */ }
   };
 
   const moveSlide = async (slide: Slide, dir: 'up' | 'down') => {
