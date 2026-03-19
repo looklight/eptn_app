@@ -163,8 +163,7 @@
   transition: all 0.15s;
 }
 
-.ws-option-btn.selected .ws-option-letter,
-.ws-option-btn:hover .ws-option-letter {
+.ws-option-btn.selected .ws-option-letter {
   background: var(--ws-teal);
   border-color: var(--ws-teal);
   color: white;
@@ -180,8 +179,12 @@
   transition: background 0.15s;
 }
 
-.ws-option-btn:hover { border-color: var(--ws-teal); background: var(--ws-teal-light); }
-.ws-option-btn:hover::before, .ws-option-btn.selected::before { background: var(--ws-teal); }
+@media (hover: hover) {
+  .ws-option-btn:hover { border-color: var(--ws-teal); background: var(--ws-teal-light); }
+  .ws-option-btn:hover::before { background: var(--ws-teal); }
+  .ws-option-btn:hover .ws-option-letter { background: var(--ws-teal); border-color: var(--ws-teal); color: white; }
+}
+.ws-option-btn.selected::before { background: var(--ws-teal); }
 .ws-option-btn.selected { border-color: var(--ws-teal); background: var(--ws-teal-light); font-weight: 600; }
 
 /* Scale */
@@ -221,7 +224,9 @@
   padding: 0;
 }
 
-.ws-scale-btn:hover { border-color: var(--ws-teal); background: var(--ws-teal-light); color: var(--ws-teal); }
+@media (hover: hover) {
+  .ws-scale-btn:hover { border-color: var(--ws-teal); background: var(--ws-teal-light); color: var(--ws-teal); }
+}
 .ws-scale-btn.selected { border-color: var(--ws-teal); background: var(--ws-teal); color: white; }
 
 /* Yes / No */
@@ -244,8 +249,12 @@
   box-sizing: border-box;
 }
 
-.ws-yes-no-btn.ws-yes:hover, .ws-yes-no-btn.ws-yes.selected { border-color: var(--ws-success); background: var(--ws-success-light); color: var(--ws-success); }
-.ws-yes-no-btn.ws-no:hover, .ws-yes-no-btn.ws-no.selected { border-color: var(--ws-danger); background: var(--ws-danger-light); color: var(--ws-danger); }
+.ws-yes-no-btn.ws-yes.selected { border-color: var(--ws-success); background: var(--ws-success-light); color: var(--ws-success); }
+.ws-yes-no-btn.ws-no.selected { border-color: var(--ws-danger); background: var(--ws-danger-light); color: var(--ws-danger); }
+@media (hover: hover) {
+  .ws-yes-no-btn.ws-yes:hover { border-color: var(--ws-success); background: var(--ws-success-light); color: var(--ws-success); }
+  .ws-yes-no-btn.ws-no:hover { border-color: var(--ws-danger); background: var(--ws-danger-light); color: var(--ws-danger); }
+}
 
 /* Configurator element */
 
@@ -294,7 +303,9 @@
   position: relative;
 }
 
-.ws-config-product:hover { border-color: var(--ws-teal); background: var(--ws-teal-light); }
+@media (hover: hover) {
+  .ws-config-product:hover { border-color: var(--ws-teal); background: var(--ws-teal-light); }
+}
 .ws-config-product.selected { border-color: var(--ws-teal); background: var(--ws-teal-light); border-left-width: 3px; }
 
 .ws-config-product-check {
@@ -586,9 +597,11 @@
   box-sizing: border-box;
 }
 
-.ws-quiz-option:hover:not(:disabled) {
-  border-color: var(--ws-teal);
-  background: var(--ws-teal-light);
+@media (hover: hover) {
+  .ws-quiz-option:hover:not(:disabled) {
+    border-color: var(--ws-teal);
+    background: var(--ws-teal-light);
+  }
 }
 
 .ws-quiz-option-letter {
