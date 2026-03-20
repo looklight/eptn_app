@@ -51,11 +51,11 @@ const SlideImageUploader: React.FC<{
     setUploadError('');
     setProgress(0);
     try {
-      const meta = { contentType: 'image/jpeg' };
       const [fullBlob, thumbBlob] = await Promise.all([
         resizeImage(file, 1920, 0.88),
         resizeImage(file, 600, 0.82),
       ]);
+      const meta = { contentType: fullBlob.type };
 
       const fullRef = storageRef(storage, `slide-images/${slide.id}`);
       const task = uploadBytesResumable(fullRef, fullBlob, meta);
@@ -369,11 +369,11 @@ const CarouselItemImageUploader: React.FC<{
     setUploadError('');
     setProgress(0);
     try {
-      const meta = { contentType: 'image/jpeg' };
       const [fullBlob, thumbBlob] = await Promise.all([
         resizeImage(file, 1200, 0.88),
         resizeImage(file, 400, 0.80),
       ]);
+      const meta = { contentType: fullBlob.type };
 
       // Upload immagine principale con tracking del progresso
       const fullRef = storageRef(storage, `carousel-images/${elementId}/${itemId}`);
