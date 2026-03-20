@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Users, Unlock, KeyRound, CheckCircle2, QrCod
 import { QRCodeSVG } from 'qrcode.react';
 import { collection, onSnapshot, query, orderBy, getDocs, doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import type { Slide, WorkshopResponse, ConfigAnswer, QuizAnswer, SlideMode, InfoElement } from '../types';
+import type { Slide, WorkshopResponse, ConfigAnswer, QuizAnswer, SlideMode, InfoElement, CarouselElement } from '../types';
 import { getSlideMode } from '../types';
 import InfoEl from '../components/elements/InfoEl';
 
@@ -248,7 +248,7 @@ const Present: React.FC = () => {
                   if (count === 0) return (
                     <div key={el.id} className="ws-present-el">
                       <div className="ws-present-el-label">
-                        {el.type === 'configurator' ? el.title : el.text}
+                        {el.type === 'configurator' ? el.title : el.type === 'carousel' ? (el as CarouselElement).title : el.text}
                       </div>
                       <div className="ws-present-no-data">Nessuna risposta ancora</div>
                     </div>
@@ -411,6 +411,44 @@ const Present: React.FC = () => {
                             )}
                           </div>
                         )}
+                      </div>
+                    );
+                  }
+
+                  /* Carousel */
+                  if (el.type === 'carousel') {
+                    const carousel = el as CarouselElement;
+                    const counts: Record<string, number> = {};
+                    carousel.items.forEach(it => { counts[it.id] = 0; });
+                    answered.forEach(r => {
+                      const v = r.answers[el.id] as string | null;
+                      if (v && v in counts) counts[v]++;
+                    });
+                    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+                    const maxCount = Math.max(...Object.values(counts), 1);
+                    return (
+                      <div key={el.id} className="ws-present-el">
+                        <div className="ws-present-el-label">{carousel.title || 'Carosello'}</div>
+                        <div className="ws-present-el-meta">{count} risposte</div>
+                        <div className="ws-present-bars">
+                          {carousel.items.map(item => {
+                            const c = counts[item.id] || 0;
+                            return (
+                              <div key={item.id} className="ws-present-bar-row">
+                                <span className="ws-present-bar-label">{item.title}</span>
+                                <div className="ws-present-bar-track">
+                                  <div className="ws-present-bar-fill" style={{ width: `${(c / maxCount) * 100}%` }} />
+                                </div>
+                                <span className="ws-present-bar-val">
+                                  {c}
+                                  {total > 0 && (
+                                    <span className="ws-present-bar-pct"> ({Math.round((c / total) * 100)}%)</span>
+                                  )}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     );
                   }

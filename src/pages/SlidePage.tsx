@@ -3,12 +3,13 @@ import { Check, ArrowRight, Eye } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, getDocs, orderBy, query, setDoc, doc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
-import type { Slide, Answers, AnswerValue, ConfigAnswer, QuizElement, QuizAnswer, WorkshopResponse } from '../types';
+import type { Slide, Answers, AnswerValue, ConfigAnswer, QuizElement, QuizAnswer, WorkshopResponse, CarouselElement, CarouselAnswer } from '../types';
 import { getSlideMode } from '../types';
 import InfoEl from '../components/elements/InfoEl';
 import QuestionEl from '../components/elements/QuestionEl';
 import ConfiguratorEl from '../components/elements/ConfiguratorEl';
 import QuizEl from '../components/elements/QuizEl';
+import CarouselEl from '../components/elements/CarouselEl';
 import PinModal from '../components/PinModal';
 
 const getSessionId = () => {
@@ -52,6 +53,18 @@ const AnswersList: React.FC<{ slide: Slide; answers: Answers }> = ({ slide, answ
               </div>
             );
           });
+        }
+        if (el.type === 'carousel') {
+          const itemId = answer as CarouselAnswer;
+          if (!itemId) return null;
+          const item = (el as CarouselElement).items.find(it => it.id === itemId);
+          if (!item) return null;
+          return (
+            <div key={el.id} className="ws-response-item">
+              <span className="ws-response-question">{(el as CarouselElement).title || 'Carosello'}</span>
+              <span className="ws-response-answer">{item.title}</span>
+            </div>
+          );
         }
         if (el.type === 'quiz') {
           const qa = answer as QuizAnswer;
@@ -442,6 +455,9 @@ const SlidePage: React.FC = () => {
             );
             if (el.type === 'quiz') return (
               <QuizEl key={el.id} element={el} value={answers[el.id] as QuizAnswer | undefined} onChange={v => setAnswer(el.id, v)} />
+            );
+            if (el.type === 'carousel') return (
+              <CarouselEl key={el.id} element={el as CarouselElement} value={answers[el.id] as CarouselAnswer | undefined} onChange={v => setAnswer(el.id, v)} />
             );
             return null;
           })}

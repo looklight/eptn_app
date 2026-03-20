@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, doc, onSnapshot, writeBatch } from 'firebase/firestore';
 import { db } from '../../firebase';
-import type { Slide, WorkshopResponse, AnswerValue, ConfigAnswer } from '../../types';
+import type { Slide, WorkshopResponse, AnswerValue, ConfigAnswer, CarouselAnswer } from '../../types';
 
 function formatAnswer(answer: AnswerValue, slide: Slide): React.ReactNode {
   if (answer === undefined || answer === null) return '—';
@@ -90,6 +90,17 @@ const ResultsTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
                 {interactive.map(el => {
                   const answer = r.answers?.[el.id];
                   if (answer === undefined) return null;
+                  if (el.type === 'carousel') {
+                    const itemId = answer as CarouselAnswer;
+                    if (!itemId) return null;
+                    const item = el.items.find(it => it.id === itemId);
+                    return (
+                      <div className="ws-response-item" key={el.id}>
+                        <span className="ws-response-question">{el.title || 'Carosello'}</span>
+                        <span className="ws-response-answer">{item?.title ?? '—'}</span>
+                      </div>
+                    );
+                  }
                   const label = el.type === 'question' ? el.text : el.type === 'configurator' ? el.title : '';
                   return (
                     <div className="ws-response-item" key={el.id}>

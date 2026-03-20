@@ -49,7 +49,21 @@ export type QuizElement = {
   showLeaderboard?: boolean; // mostra classifica cumulativa dopo questa slide
 };
 
-export type SlideElement = InfoElement | QuestionElement | ConfiguratorElement | QuizElement;
+export type CarouselItem = {
+  id: string;
+  title: string;
+  imageUrl?: string;
+  description?: string;
+};
+
+export type CarouselElement = {
+  id: string;
+  type: 'carousel';
+  title: string;
+  items: CarouselItem[];
+};
+
+export type SlideElement = InfoElement | QuestionElement | ConfiguratorElement | QuizElement | CarouselElement;
 
 export type SlideMode = 'moderated' | 'pin' | 'autonomous';
 
@@ -81,7 +95,8 @@ export type Workshop = {
 
 export type ConfigAnswer = Record<string, string | null>;
 export type QuizAnswer = { answer: number; responseTimeMs: number };
-export type AnswerValue = string | string[] | number | boolean | ConfigAnswer | QuizAnswer;
+export type CarouselAnswer = string | null;
+export type AnswerValue = string | string[] | number | boolean | ConfigAnswer | QuizAnswer | CarouselAnswer;
 export type Answers = Record<string, AnswerValue>;
 
 export type WorkshopResponse = {
