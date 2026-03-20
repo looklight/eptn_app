@@ -95,14 +95,25 @@ const AnswersList: React.FC<{ slide: Slide; answers: Answers }> = ({ slide, answ
         }
         if (el.type === 'rating') {
           const ra = answer as RatingAnswer;
+          const ratingEl = el as RatingElement;
+          const scores = ratingEl.categories.map(c => ra[c.id] ?? 0).filter(s => s > 0);
+          const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
           return (
-            <div key={el.id}>
-              {(el as RatingElement).categories.map(cat => (
+            <div key={el.id} className="ws-recap-rating">
+              {ratingEl.title && <div className="ws-recap-rating-title">{ratingEl.title}</div>}
+              {ratingEl.categories.map(cat => (
                 <div key={cat.id} className="ws-response-item">
                   <span className="ws-response-question">{cat.label}</span>
-                  <span className="ws-response-answer">{'★'.repeat(ra[cat.id] ?? 0)}{'☆'.repeat(5 - (ra[cat.id] ?? 0))}</span>
+                  <span className="ws-response-answer" style={{ color: '#f59e0b' }}>
+                    {'★'.repeat(ra[cat.id] ?? 0)}{'☆'.repeat(5 - (ra[cat.id] ?? 0))}
+                  </span>
                 </div>
               ))}
+              {avg > 0 && (
+                <div className="ws-recap-rating-avg">
+                  Media <strong>{avg.toFixed(1)} / 5</strong>
+                </div>
+              )}
             </div>
           );
         }

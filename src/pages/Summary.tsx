@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
 import { collection, getDocs, orderBy, query, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
-import type { Slide, WorkshopResponse, QuizAnswer, QuizElement } from '../types';
+import type { Slide, WorkshopResponse, QuizAnswer, QuizElement, RatingElement, RatingAnswer } from '../types';
 
 const Summary: React.FC = () => {
   const [slides, setSlides] = useState<Slide[]>([]);
@@ -71,6 +71,83 @@ const Summary: React.FC = () => {
         <div className="ws-thankyou-bar" />
         <p className="ws-subtitle">Hai completato il workshop.</p>
       </div>
+
+      {/* Rating comparison */}
+      {(() => {
+        const myResponse = responses.find(r => r.id === sessionId);
+        const completeResponses = responses.filter(r => !r.partial);
+        const ratingBlocks: React.ReactNode[] = [];
+
+        sorted.forEach(slide => {
+          slide.elements.forEach(el => {
+            if (el.type !== 'rating') return;
+            const ratingEl = el as RatingElement;
+            if (!ratingEl.showSummary) return;
+
+            const myRa = myResponse?.answers?.[el.id] as RatingAnswer | undefined;
+            const myScores = ratingEl.categories.map(c => myRa?.[c.id] ?? 0).filter(s => s > 0);
+            const myAvg = myScores.length > 0 ? myScores.reduce((a, b) => a + b, 0) / myScores.length : 0;
+
+            ratingBlocks.push(
+              <div key={el.id} className="ws-summary-rating-card">
+                <div className="ws-summary-rating-header">
+                  <span className="ws-summary-rating-slide">{slide.title}</span>
+                  {ratingEl.title && <span className="ws-summary-rating-subtitle">{ratingEl.title}</span>}
+                </div>
+                {ratingEl.categories.map(cat => {
+                  const myStars = myRa?.[cat.id] ?? 0;
+                  const groupScores = completeResponses
+                    .map(r => (r.answers?.[el.id] as RatingAnswer)?.[cat.id])
+                    .filter((v): v is number => typeof v === 'number' && v > 0);
+                  const groupAvg = groupScores.length > 0
+                    ? groupScores.reduce((a, b) => a + b, 0) / groupScores.length
+                    : 0;
+                  return (
+                    <div key={cat.id} className="ws-summary-rating-row">
+                      <span className="ws-summary-rating-cat">{cat.label}</span>
+                      {myRa && (
+                        <span className="ws-summary-rating-mine" style={{ color: '#f59e0b' }}>
+                          {'★'.repeat(myStars)}{'☆'.repeat(5 - myStars)}
+                        </span>
+                      )}
+                      {groupAvg > 0 && (
+                        <span className="ws-summary-rating-group">
+                          media gruppo: <strong>{groupAvg.toFixed(1)}</strong>
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+                {myAvg > 0 && (
+                  <div className="ws-summary-rating-footer">
+                    La tua media: <strong style={{ color: '#f59e0b' }}>{myAvg.toFixed(1)} / 5</strong>
+                    {(() => {
+                      const allGroupScores = ratingEl.categories.flatMap(cat =>
+                        completeResponses
+                          .map(r => (r.answers?.[el.id] as RatingAnswer)?.[cat.id])
+                          .filter((v): v is number => typeof v === 'number' && v > 0)
+                      );
+                      const groupOverallAvg = allGroupScores.length > 0
+                        ? allGroupScores.reduce((a, b) => a + b, 0) / allGroupScores.length
+                        : 0;
+                      return groupOverallAvg > 0
+                        ? <> · Media gruppo: <strong>{groupOverallAvg.toFixed(1)} / 5</strong></>
+                        : null;
+                    })()}
+                  </div>
+                )}
+              </div>
+            );
+          });
+        });
+
+        return ratingBlocks.length > 0 ? (
+          <div className="ws-summary-ratings">
+            <h2 className="ws-summary-lb-title">Valutazioni</h2>
+            {ratingBlocks}
+          </div>
+        ) : null;
+      })()}
 
       {hasQuizzes && (
         <div className="ws-summary-leaderboard">

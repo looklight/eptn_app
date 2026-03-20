@@ -74,6 +74,7 @@ export type RatingElement = {
   type: 'rating';
   title: string;
   categories: RatingCategory[];
+  showSummary?: boolean; // mostra nel riepilogo finale per il confronto
 };
 
 export type SlideElement = InfoElement | QuestionElement | ConfiguratorElement | QuizElement | CarouselElement | RatingElement;

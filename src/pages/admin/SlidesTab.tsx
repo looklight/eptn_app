@@ -549,6 +549,18 @@ const RatingEditor: React.FC<{ element: RatingElement; onChange: (el: RatingElem
       <button className="ws-add-option-link" onClick={() =>
         onChange({ ...element, categories: [...element.categories, { id: uid(), label: '' }] })
       }>+ Aggiungi categoria</button>
+      <div className="ws-setting-row" style={{ marginTop: 16 }}>
+        <div className="ws-setting-row-info">
+          <span className="ws-setting-row-title">Mostra nel riepilogo finale</span>
+          <span className="ws-setting-row-desc">I partecipanti vedono questa valutazione nella pagina di confronto finale</span>
+        </div>
+        <label className="ws-toggle-switch">
+          <input type="checkbox" className="ws-toggle-input" checked={!!element.showSummary}
+            onChange={e => onChange({ ...element, showSummary: e.target.checked })} />
+          <span className="ws-toggle-track" />
+          <span className="ws-toggle-knob" />
+        </label>
+      </div>
     </div>
   );
 };
