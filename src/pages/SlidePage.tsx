@@ -12,6 +12,19 @@ import QuizEl from '../components/elements/QuizEl';
 import CarouselEl from '../components/elements/CarouselEl';
 import PinModal from '../components/PinModal';
 
+const preloadSlideImages = (slide: Slide | undefined) => {
+  if (!slide) return;
+  if (slide.imageUrl) new Image().src = slide.imageUrl;
+  slide.elements.forEach(el => {
+    if (el.type === 'carousel') {
+      (el as CarouselElement).items.forEach(item => {
+        const src = item.thumbnailUrl ?? item.imageUrl;
+        if (src) new Image().src = src;
+      });
+    }
+  });
+};
+
 const getSessionId = () => {
   let id = sessionStorage.getItem('ws_session_id');
   if (!id) {
@@ -252,6 +265,9 @@ const SlidePage: React.FC = () => {
   // Scroll to top after any screen transition (runs after DOM update)
   useEffect(() => { window.scrollTo(0, 0); }, [slideIndex, showingRecap, showingLeaderboard, waiting]);
 
+  // Preload next slide images while the user is on the current slide
+  useEffect(() => { preloadSlideImages(slidesRef.current[slideIndex + 1]); }, [slideIndex]);
+
   const name = isPreview ? 'Anteprima' : sessionStorage.getItem('ws_name');
 
   useEffect(() => {
@@ -267,6 +283,8 @@ const SlidePage: React.FC = () => {
       setSlides(loaded);
       slidesRef.current = loaded;
       setLoading(false);
+      preloadSlideImages(loaded[slideIndex]);
+      preloadSlideImages(loaded[slideIndex + 1]);
     };
     load();
   }, [navigate, name, isPreview]);
