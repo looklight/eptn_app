@@ -548,7 +548,7 @@ const Present: React.FC = () => {
                                     <div className="ws-present-scale-bar-wrap">
                                       <div className="ws-present-scale-bar-fill" style={{ height: `${(counts[star] / maxCount) * 100}%` }} />
                                     </div>
-                                    <div className="ws-present-scale-num">{'★'.repeat(star)}</div>
+                                    <div className="ws-present-scale-num" style={{ color: '#f59e0b' }}>{'★'.repeat(star)}</div>
                                     <div className="ws-present-scale-count">{counts[star]}</div>
                                   </div>
                                 ))}
