@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch, deleteField } from 'firebase/firestore';
-import { ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref as storageRef, uploadBytesResumable, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { resizeImage, MAX_IMAGE_INPUT_MB } from '../../utils/imageUtils';
 import { db, storage } from '../../firebase';
 import type {
   Slide, SlideElement, InfoElement, QuestionElement,
@@ -44,32 +45,40 @@ const SlideImageUploader: React.FC<{
     };
   }, []);
 
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     if (!file.type.startsWith('image/')) return;
     setUploading(true);
     setUploadError('');
     setProgress(0);
-    const sRef = storageRef(storage, `slide-images/${slide.id}`);
-    const task = uploadBytesResumable(sRef, file);
-    taskRef.current = task;
-    task.on(
-      'state_changed',
-      snap => {
-        if (mountedRef.current) setProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100));
-      },
-      () => {
-        if (mountedRef.current) { setUploading(false); setUploadError('Upload fallito. Riprova.'); }
-      },
-      async () => {
-        try {
-          const url = await getDownloadURL(task.snapshot.ref);
-          await updateDoc(doc(db, 'slides', slide.id), { imageUrl: url });
-          if (mountedRef.current) { onImageChange(url); setUploading(false); }
-        } catch {
-          if (mountedRef.current) { setUploading(false); setUploadError('Errore nel salvataggio. Riprova.'); }
-        }
-      },
-    );
+    try {
+      const blob = await resizeImage(file, 1920, 0.88);
+      const sRef = storageRef(storage, `slide-images/${slide.id}`);
+      const task = uploadBytesResumable(sRef, blob, { contentType: 'image/jpeg' });
+      taskRef.current = task;
+      task.on(
+        'state_changed',
+        snap => {
+          if (mountedRef.current) setProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100));
+        },
+        () => {
+          if (mountedRef.current) { setUploading(false); setUploadError('Upload fallito. Riprova.'); }
+        },
+        async () => {
+          try {
+            const url = await getDownloadURL(task.snapshot.ref);
+            await updateDoc(doc(db, 'slides', slide.id), { imageUrl: url });
+            if (mountedRef.current) { onImageChange(url); setUploading(false); }
+          } catch {
+            if (mountedRef.current) { setUploading(false); setUploadError('Errore nel salvataggio. Riprova.'); }
+          }
+        },
+      );
+    } catch (err) {
+      if (mountedRef.current) {
+        setUploading(false);
+        setUploadError(err instanceof Error ? err.message : `Errore. Max ${MAX_IMAGE_INPUT_MB} MB.`);
+      }
+    }
   };
 
   const removeImage = async () => {
@@ -330,7 +339,7 @@ const CarouselItemImageUploader: React.FC<{
   elementId: string;
   itemId: string;
   imageUrl?: string;
-  onImageChange: (url: string | undefined) => void;
+  onImageChange: (imageUrl: string | undefined, thumbnailUrl: string | undefined) => void;
 }> = ({ elementId, itemId, imageUrl, onImageChange }) => {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -347,38 +356,57 @@ const CarouselItemImageUploader: React.FC<{
     };
   }, []);
 
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     if (!file.type.startsWith('image/')) return;
     setUploading(true);
     setUploadError('');
     setProgress(0);
-    const sRef = storageRef(storage, `carousel-images/${elementId}/${itemId}`);
-    const task = uploadBytesResumable(sRef, file);
-    taskRef.current = task;
-    task.on(
-      'state_changed',
-      snap => {
-        if (mountedRef.current) setProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100));
-      },
-      () => {
-        if (mountedRef.current) { setUploading(false); setUploadError('Upload fallito. Riprova.'); }
-      },
-      async () => {
-        try {
-          const url = await getDownloadURL(task.snapshot.ref);
-          if (mountedRef.current) { onImageChange(url); setUploading(false); }
-        } catch {
-          if (mountedRef.current) { setUploading(false); setUploadError('Errore. Riprova.'); }
-        }
-      },
-    );
+    try {
+      const meta = { contentType: 'image/jpeg' };
+      const [fullBlob, thumbBlob] = await Promise.all([
+        resizeImage(file, 1200, 0.88),
+        resizeImage(file, 400, 0.80),
+      ]);
+
+      // Upload immagine principale con tracking del progresso
+      const fullRef = storageRef(storage, `carousel-images/${elementId}/${itemId}`);
+      const task = uploadBytesResumable(fullRef, fullBlob, meta);
+      taskRef.current = task;
+
+      await new Promise<void>((resolve, reject) => {
+        task.on(
+          'state_changed',
+          snap => {
+            if (mountedRef.current) setProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100));
+          },
+          reject,
+          resolve,
+        );
+      });
+
+      // URL immagine principale + upload thumbnail in parallelo
+      const thumbRef = storageRef(storage, `carousel-images/${elementId}/${itemId}_thumb`);
+      const [fullUrl, thumbResult] = await Promise.all([
+        getDownloadURL(task.snapshot.ref),
+        uploadBytes(thumbRef, thumbBlob, meta),
+      ]);
+      const thumbUrl = await getDownloadURL(thumbResult.ref);
+
+      if (mountedRef.current) { onImageChange(fullUrl, thumbUrl); setUploading(false); }
+    } catch (err) {
+      if (mountedRef.current) {
+        setUploading(false);
+        setUploadError(err instanceof Error ? err.message : `Errore. Max ${MAX_IMAGE_INPUT_MB} MB.`);
+      }
+    }
   };
 
   const removeImage = async () => {
-    try {
-      await deleteObject(storageRef(storage, `carousel-images/${elementId}/${itemId}`));
-    } catch { /* il file potrebbe non esistere */ }
-    onImageChange(undefined);
+    await Promise.allSettled([
+      deleteObject(storageRef(storage, `carousel-images/${elementId}/${itemId}`)),
+      deleteObject(storageRef(storage, `carousel-images/${elementId}/${itemId}_thumb`)),
+    ]);
+    onImageChange(undefined, undefined);
   };
 
   if (imageUrl) {
@@ -455,6 +483,7 @@ const CarouselEditor: React.FC<{ element: CarouselElement; onChange: (el: Carous
             <button className="ws-icon-btn" title="Elimina elemento"
               onClick={() => {
                 deleteObject(storageRef(storage, `carousel-images/${element.id}/${item.id}`)).catch(() => {});
+                deleteObject(storageRef(storage, `carousel-images/${element.id}/${item.id}_thumb`)).catch(() => {});
                 onChange({ ...element, items: element.items.filter(it => it.id !== item.id) });
               }}>
               <X size={14} />
@@ -465,7 +494,7 @@ const CarouselEditor: React.FC<{ element: CarouselElement; onChange: (el: Carous
               elementId={element.id}
               itemId={item.id}
               imageUrl={item.imageUrl}
-              onImageChange={url => updateItem(item.id, { imageUrl: url })}
+              onImageChange={(url, thumbUrl) => updateItem(item.id, { imageUrl: url, thumbnailUrl: thumbUrl })}
             />
             <input className="ws-field" type="text" value={item.description || ''} placeholder="Descrizione (opzionale)"
               onChange={e => updateItem(item.id, { description: e.target.value })} />
@@ -714,6 +743,7 @@ const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
       if (el.type === 'carousel') {
         el.items.forEach(item => {
           deleteObject(storageRef(storage, `carousel-images/${el.id}/${item.id}`)).catch(() => {});
+          deleteObject(storageRef(storage, `carousel-images/${el.id}/${item.id}_thumb`)).catch(() => {});
         });
       }
     });
@@ -754,6 +784,7 @@ const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
     if (el?.type === 'carousel') {
       el.items.forEach(item => {
         deleteObject(storageRef(storage, `carousel-images/${el.id}/${item.id}`)).catch(() => {});
+        deleteObject(storageRef(storage, `carousel-images/${el.id}/${item.id}_thumb`)).catch(() => {});
       });
     }
     setEditing(prev => prev ? { ...prev, elements: prev.elements.filter(e => e.id !== id) } : prev);

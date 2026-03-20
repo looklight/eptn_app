@@ -53,6 +53,7 @@ export type CarouselItem = {
   id: string;
   title: string;
   imageUrl?: string;
+  thumbnailUrl?: string;
   description?: string;
 };
 

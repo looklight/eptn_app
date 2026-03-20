@@ -46,7 +46,7 @@ const CarouselEl: React.FC<Props> = ({ element, value, onChange }) => {
             >
               <div className="ws-carousel-card-img-wrap">
                 {item.imageUrl ? (
-                  <img src={item.imageUrl} alt={item.title} className="ws-carousel-card-img" />
+                  <img src={item.thumbnailUrl ?? item.imageUrl} alt={item.title} className="ws-carousel-card-img" loading="lazy" />
                 ) : (
                   <div className="ws-carousel-card-img-placeholder">
                     <ImageOff size={22} />
