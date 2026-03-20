@@ -27,7 +27,10 @@ export async function resizeImage(
       const canvas = document.createElement('canvas');
       canvas.width = w;
       canvas.height = h;
-      canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+      const ctx = canvas.getContext('2d')!;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
       canvas.toBlob(
         blob => (blob ? resolve(blob) : reject(new Error('Conversione immagine fallita.'))),
         'image/jpeg',
