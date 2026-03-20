@@ -339,8 +339,9 @@ const CarouselItemImageUploader: React.FC<{
   elementId: string;
   itemId: string;
   imageUrl?: string;
+  thumbnailUrl?: string;
   onImageChange: (imageUrl: string | undefined, thumbnailUrl: string | undefined) => void;
-}> = ({ elementId, itemId, imageUrl, onImageChange }) => {
+}> = ({ elementId, itemId, imageUrl, thumbnailUrl, onImageChange }) => {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [uploadError, setUploadError] = useState('');
@@ -412,7 +413,7 @@ const CarouselItemImageUploader: React.FC<{
   if (imageUrl) {
     return (
       <div className="ws-carousel-item-img-preview">
-        <img src={imageUrl} alt="" className="ws-carousel-item-img-thumb" />
+        <img src={thumbnailUrl ?? imageUrl} alt="" className="ws-carousel-item-img-thumb" />
         <button className="ws-slide-image-remove" onClick={removeImage} type="button">
           <X size={12} /> Rimuovi
         </button>
@@ -494,6 +495,7 @@ const CarouselEditor: React.FC<{ element: CarouselElement; onChange: (el: Carous
               elementId={element.id}
               itemId={item.id}
               imageUrl={item.imageUrl}
+              thumbnailUrl={item.thumbnailUrl}
               onImageChange={(url, thumbUrl) => updateItem(item.id, { imageUrl: url, thumbnailUrl: thumbUrl })}
             />
             <input className="ws-field" type="text" value={item.description || ''} placeholder="Descrizione (opzionale)"
