@@ -689,7 +689,7 @@ const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
   const persistCurrent = async () => {
     if (!editing) return;
     setSaving(true);
-    const { id, ...data } = editing;
+    const { id, order: _order, ...data } = editing; // order è gestito solo da moveSlide
     await updateDoc(doc(db, 'slides', id), data as Record<string, unknown>);
     setSaving(false);
   };
