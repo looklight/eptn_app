@@ -737,8 +737,9 @@ const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
     await deleteDoc(doc(db, 'slides', id));
     if (editing?.id === id) setEditing(null);
     try { await deleteObject(storageRef(storage, `slide-images/${id}`)); } catch { /* nessuna immagine */ }
-    // Pulizia immagini carosello nella slide eliminata
-    const slide = sorted.find(s => s.id === id);
+    // Pulizia immagini carosello nella slide eliminata.
+    // Se la slide era in editing, usa lo stato locale (può avere immagini non ancora salvate su Firestore).
+    const slide = (editing?.id === id ? editing : null) ?? sorted.find(s => s.id === id);
     slide?.elements.forEach(el => {
       if (el.type === 'carousel') {
         el.items.forEach(item => {
