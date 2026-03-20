@@ -968,10 +968,6 @@ const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
                       <span className="ws-add-el-icon"><FileText size={20} /></span>
                       <span className="ws-add-el-name">Info / Testo</span>
                     </button>
-                    <button className="ws-add-el-btn ws-add-el-btn--question" onClick={() => addElement('question')}>
-                      <span className="ws-add-el-icon"><HelpCircle size={20} /></span>
-                      <span className="ws-add-el-name">Domanda</span>
-                    </button>
                     <button className="ws-add-el-btn ws-add-el-btn--configurator" onClick={() => addElement('configurator')}>
                       <span className="ws-add-el-icon"><SlidersHorizontal size={20} /></span>
                       <span className="ws-add-el-name">Configuratore</span>
@@ -979,6 +975,10 @@ const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
                     <button className="ws-add-el-btn ws-add-el-btn--carousel" onClick={() => addElement('carousel')}>
                       <span className="ws-add-el-icon"><GalleryHorizontal size={20} /></span>
                       <span className="ws-add-el-name">Carosello</span>
+                    </button>
+                    <button className="ws-add-el-btn ws-add-el-btn--question" onClick={() => addElement('question')}>
+                      <span className="ws-add-el-icon"><HelpCircle size={20} /></span>
+                      <span className="ws-add-el-name">Domanda</span>
                     </button>
                     <button
                       className="ws-add-el-btn ws-add-el-btn--quiz"
