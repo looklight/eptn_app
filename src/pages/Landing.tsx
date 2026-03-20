@@ -8,6 +8,7 @@ import type { Workshop } from '../types';
 const Landing: React.FC = () => {
   const [name, setName] = useState('');
   const [workshop, setWorkshop] = useState<Workshop | null>(null);
+  const [starting, setStarting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -16,17 +17,22 @@ const Landing: React.FC = () => {
     });
   }, []);
 
-  const handleStart = () => {
+  const handleStart = async () => {
     const trimmed = name.trim();
-    if (!trimmed) return;
+    if (!trimmed || starting) return;
+    setStarting(true);
     const sessionId = crypto.randomUUID();
     sessionStorage.setItem('ws_session_id', sessionId);
     sessionStorage.setItem('ws_name', trimmed);
     sessionStorage.setItem('ws_slide', '0');
     sessionStorage.setItem('ws_answers', '{}');
-    setDoc(doc(db, 'responses', sessionId), {
-      name: trimmed, registered: true, partial: true, answers: {},
-    }).catch(console.error);
+    try {
+      await setDoc(doc(db, 'responses', sessionId), {
+        name: trimmed, registered: true, partial: true, answers: {},
+      });
+    } catch (err) {
+      console.error(err);
+    }
     navigate('/slide');
   };
 
@@ -56,7 +62,7 @@ const Landing: React.FC = () => {
               onKeyDown={e => e.key === 'Enter' && handleStart()}
               autoFocus
             />
-            <button className="ws-btn ws-btn-primary ws-btn-full" onClick={handleStart} disabled={!name.trim()}>
+            <button className="ws-btn ws-btn-primary ws-btn-full" onClick={handleStart} disabled={!name.trim() || starting}>
               Partecipa <ArrowRight size={16} />
             </button>
           </>

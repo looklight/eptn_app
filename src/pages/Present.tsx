@@ -60,6 +60,31 @@ const Present: React.FC = () => {
   const sorted = useMemo(() => [...slides].sort((a, b) => a.order - b.order), [slides]);
   const hasModerated = useMemo(() => sorted.some(s => getSlideMode(s) === 'moderated'), [sorted]);
 
+  const isWelcome = showLobby && currentSlide < 0;
+  const effectiveSlide = isWelcome ? -1 : Math.max(0, currentSlide);
+  const slide = !isWelcome ? (sorted[effectiveSlide] ?? null) : null;
+  const mode = slide ? getSlideMode(slide) : 'moderated';
+
+  const interactive = useMemo(
+    () => slide ? slide.elements.filter(el => el.type !== 'info') : [],
+    [slide]
+  );
+
+  const answeredByElementId = useMemo(() => {
+    const map = new Map<string, WorkshopResponse[]>();
+    interactive.forEach(el => {
+      map.set(el.id, responses.filter(r => r.answers?.[el.id] !== undefined));
+    });
+    return map;
+  }, [interactive, responses]);
+
+  const answeredCount = useMemo(
+    () => interactive.length > 0
+      ? responses.filter(r => interactive.some(el => r.answers?.[el.id] !== undefined)).length
+      : null,
+    [interactive, responses]
+  );
+
   // Navigazione con frecce tastiera
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -78,15 +103,6 @@ const Present: React.FC = () => {
   const complete = responses.filter(r => !r.partial).length;
   const inProgress = responses.filter(r => r.partial).length;
   const totalParticipants = responses.length;
-
-  const isWelcome = showLobby && currentSlide < 0;
-  const effectiveSlide = isWelcome ? -1 : Math.max(0, currentSlide);
-  const slide = !isWelcome ? (sorted[effectiveSlide] ?? null) : null;
-  const mode = slide ? getSlideMode(slide) : 'moderated';
-  const interactive = slide ? slide.elements.filter(el => el.type !== 'info') : [];
-  const answeredCount = interactive.length > 0
-    ? responses.filter(r => interactive.some(el => r.answers?.[el.id] !== undefined)).length
-    : null;
 
   return (
     <div className="ws-present">
@@ -242,7 +258,7 @@ const Present: React.FC = () => {
                 </div>
               ) : (
                 interactive.map(el => {
-                  const answered = responses.filter(r => r.answers?.[el.id] !== undefined);
+                  const answered = answeredByElementId.get(el.id) ?? [];
                   const count = answered.length;
 
                   if (count === 0) return (
