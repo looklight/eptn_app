@@ -368,24 +368,18 @@
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 8px;
-  padding-left: 16px;        /* allinea prima card al testo */
-  padding-right: 16px;       /* respiro sul bordo destro */
-  margin-left: -16px;        /* esce dal padding del contenitore */
+  padding-left: 16px;    /* allinea prima card al testo */
+  padding-right: 16px;   /* respiro sul bordo destro */
+  margin-left: -16px;    /* esce dal padding del contenitore */
   margin-right: -16px;
-  scroll-padding-left: 16px; /* scroll snap allineato al padding */
-  scrollbar-width: thin;
-  scrollbar-color: var(--ws-border) transparent;
+  scrollbar-width: none;
 }
-.ws-carousel-track::-webkit-scrollbar { height: 4px; }
-.ws-carousel-track::-webkit-scrollbar-track { background: transparent; }
-.ws-carousel-track::-webkit-scrollbar-thumb { background: var(--ws-border); border-radius: 2px; }
+.ws-carousel-track::-webkit-scrollbar { display: none; }
 
 .ws-carousel-card {
   flex: 0 0 156px;
-  scroll-snap-align: start;
   border: 1.5px solid var(--ws-border);
   border-radius: var(--ws-radius-md);
   background: white;
