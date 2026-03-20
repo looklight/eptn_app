@@ -28,7 +28,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 
 const SlideImageUploader: React.FC<{
   slide: Slide;
-  onImageChange: (url: string | undefined) => void;
+  onImageChange: (imageUrl: string | undefined, thumbnailUrl: string | undefined) => void;
 }> = ({ slide, onImageChange }) => {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -51,28 +51,33 @@ const SlideImageUploader: React.FC<{
     setUploadError('');
     setProgress(0);
     try {
-      const blob = await resizeImage(file, 1920, 0.88);
-      const sRef = storageRef(storage, `slide-images/${slide.id}`);
-      const task = uploadBytesResumable(sRef, blob, { contentType: 'image/jpeg' });
+      const meta = { contentType: 'image/jpeg' };
+      const [fullBlob, thumbBlob] = await Promise.all([
+        resizeImage(file, 1920, 0.88),
+        resizeImage(file, 600, 0.82),
+      ]);
+
+      const fullRef = storageRef(storage, `slide-images/${slide.id}`);
+      const task = uploadBytesResumable(fullRef, fullBlob, meta);
       taskRef.current = task;
-      task.on(
-        'state_changed',
-        snap => {
-          if (mountedRef.current) setProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100));
-        },
-        () => {
-          if (mountedRef.current) { setUploading(false); setUploadError('Upload fallito. Riprova.'); }
-        },
-        async () => {
-          try {
-            const url = await getDownloadURL(task.snapshot.ref);
-            await updateDoc(doc(db, 'slides', slide.id), { imageUrl: url });
-            if (mountedRef.current) { onImageChange(url); setUploading(false); }
-          } catch {
-            if (mountedRef.current) { setUploading(false); setUploadError('Errore nel salvataggio. Riprova.'); }
-          }
-        },
-      );
+
+      await new Promise<void>((resolve, reject) => {
+        task.on('state_changed',
+          snap => { if (mountedRef.current) setProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)); },
+          reject,
+          resolve,
+        );
+      });
+
+      const thumbRef = storageRef(storage, `slide-images/${slide.id}_thumb`);
+      const [fullUrl, thumbResult] = await Promise.all([
+        getDownloadURL(task.snapshot.ref),
+        uploadBytes(thumbRef, thumbBlob, meta),
+      ]);
+      const thumbUrl = await getDownloadURL(thumbResult.ref);
+
+      await updateDoc(doc(db, 'slides', slide.id), { imageUrl: fullUrl, thumbnailUrl: thumbUrl });
+      if (mountedRef.current) { onImageChange(fullUrl, thumbUrl); setUploading(false); }
     } catch (err) {
       if (mountedRef.current) {
         setUploading(false);
@@ -82,17 +87,18 @@ const SlideImageUploader: React.FC<{
   };
 
   const removeImage = async () => {
-    try {
-      await deleteObject(storageRef(storage, `slide-images/${slide.id}`));
-    } catch { /* il file potrebbe non esistere nello storage */ }
-    await updateDoc(doc(db, 'slides', slide.id), { imageUrl: deleteField() });
-    onImageChange(undefined);
+    await Promise.allSettled([
+      deleteObject(storageRef(storage, `slide-images/${slide.id}`)),
+      deleteObject(storageRef(storage, `slide-images/${slide.id}_thumb`)),
+    ]);
+    await updateDoc(doc(db, 'slides', slide.id), { imageUrl: deleteField(), thumbnailUrl: deleteField() });
+    onImageChange(undefined, undefined);
   };
 
   if (slide.imageUrl) {
     return (
       <div className="ws-slide-image-preview">
-        <img src={slide.imageUrl} alt="" className="ws-slide-image-thumb" />
+        <img src={slide.thumbnailUrl ?? slide.imageUrl} alt="" className="ws-slide-image-thumb" />
         <button className="ws-slide-image-remove" onClick={removeImage} type="button">
           <X size={12} /> Rimuovi immagine
         </button>
@@ -619,7 +625,7 @@ const SlidePreview: React.FC<{ slide: Slide }> = ({ slide }) => (
             <div className="ws-slide-content">
               {slide.imageUrl && (
                 <div className="ws-slide-image-wrap">
-                  <img src={slide.imageUrl} alt="" className="ws-slide-image" />
+                  <img src={slide.thumbnailUrl ?? slide.imageUrl} alt="" className="ws-slide-image" />
                 </div>
               )}
               {slide.elements.length === 0 ? (
@@ -738,7 +744,10 @@ const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
     if (!confirm('Eliminare questa slide?')) return;
     await deleteDoc(doc(db, 'slides', id));
     if (editing?.id === id) setEditing(null);
-    try { await deleteObject(storageRef(storage, `slide-images/${id}`)); } catch { /* nessuna immagine */ }
+    await Promise.allSettled([
+      deleteObject(storageRef(storage, `slide-images/${id}`)),
+      deleteObject(storageRef(storage, `slide-images/${id}_thumb`)),
+    ]);
     // Pulizia immagini carosello nella slide eliminata.
     // Se la slide era in editing, usa lo stato locale (può avere immagini non ancora salvate su Firestore).
     const slide = (editing?.id === id ? editing : null) ?? sorted.find(s => s.id === id);
@@ -842,7 +851,7 @@ const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
                     <label className="ws-label">Immagine di copertina</label>
                     <SlideImageUploader
                       slide={editing}
-                      onImageChange={url => setEditing(prev => prev ? { ...prev, imageUrl: url } : prev)}
+                      onImageChange={(url, thumbUrl) => setEditing(prev => prev ? { ...prev, imageUrl: url, thumbnailUrl: thumbUrl } : prev)}
                     />
                   </div>
                   {last ? (

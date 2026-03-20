@@ -14,7 +14,8 @@ import PinModal from '../components/PinModal';
 
 const preloadSlideImages = (slide: Slide | undefined) => {
   if (!slide) return;
-  if (slide.imageUrl) new Image().src = slide.imageUrl;
+  const coverSrc = slide.thumbnailUrl ?? slide.imageUrl;
+  if (coverSrc) new Image().src = coverSrc;
   slide.elements.forEach(el => {
     if (el.type === 'carousel') {
       (el as CarouselElement).items.forEach(item => {
@@ -460,7 +461,7 @@ const SlidePage: React.FC = () => {
         <div className="ws-slide-content">
           {slide.imageUrl && (
             <div className="ws-slide-image-wrap">
-              <img src={slide.imageUrl} alt="" className="ws-slide-image" />
+              <img src={slide.thumbnailUrl ?? slide.imageUrl} alt="" className="ws-slide-image" />
             </div>
           )}
           {slide.elements.map(el => {
