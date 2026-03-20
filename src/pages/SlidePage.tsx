@@ -454,7 +454,6 @@ const SlidePage: React.FC = () => {
 
       <div className="ws-slide-inner">
         <div className="ws-slide-header">
-          <span className="ws-slide-counter">Slide {slideIndex + 1} di {slides.length}</span>
           <h1 className="ws-slide-title">{slide.title}</h1>
         </div>
 
