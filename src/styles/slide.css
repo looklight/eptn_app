@@ -608,7 +608,7 @@
 .ws-response-item {
   display: flex; justify-content: space-between;
   align-items: flex-start; gap: 16px;
-  padding: 9px 0; border-bottom: 1px solid var(--ws-bg);
+  padding: 13px 0; border-bottom: 1px solid var(--ws-border);
   font-size: 14px;
 }
 .ws-response-item:last-child { border-bottom: none; }
@@ -659,6 +659,7 @@
   box-shadow: var(--ws-shadow-sm);
   overflow: hidden;
   margin-bottom: 8px;
+  padding: 0 16px;
 }
 
 /* ================================================
