@@ -19,6 +19,11 @@ const CarouselEl: React.FC<Props> = ({ element, value, onChange }) => {
   const handleScroll = () => {
     const track = trackRef.current;
     if (!track || !track.children.length) return;
+    // Se siamo alla fine dello scroll → ultimo dot
+    if (track.scrollLeft + track.clientWidth >= track.scrollWidth - 2) {
+      setActiveIndex(element.items.length - 1);
+      return;
+    }
     const cardWidth = (track.children[0] as HTMLElement).offsetWidth + 12; // card + gap
     const index = Math.round(track.scrollLeft / cardWidth);
     setActiveIndex(Math.max(0, Math.min(index, element.items.length - 1)));
