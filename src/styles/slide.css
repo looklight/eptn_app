@@ -1022,15 +1022,23 @@
   border: none;
   cursor: pointer;
   color: #d1d5db;
-  transition: color 0.12s, transform 0.1s;
-  padding: 2px 1px;
+  transition: color 0.1s, transform 0.12s;
+  padding: 4px 3px;
   font-family: inherit;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ws-rating-star:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.5);
+  border-radius: 3px;
 }
 
 .ws-rating-star.active { color: #f59e0b; }
 
 @media (hover: hover) {
-  .ws-rating-star:hover { transform: scale(1.2); color: #f59e0b; }
+  /* Scala solo la stella su cui si è fermi, le altre si accendono via .active */
+  .ws-rating-star:hover { transform: scale(1.25); }
 }
 
 /* ================================================
