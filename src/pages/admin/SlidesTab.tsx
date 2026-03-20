@@ -7,6 +7,7 @@ import type {
   Slide, SlideElement, InfoElement, QuestionElement,
   ConfiguratorElement, ConfigCategory, ConfigProduct, QuestionType,
   QuizElement, CarouselElement, CarouselItem, SlideMode,
+  RatingElement, RatingCategory,
 } from '../../types';
 import { getSlideMode } from '../../types';
 import InfoEl from '../../components/elements/InfoEl';
@@ -14,11 +15,12 @@ import QuestionEl from '../../components/elements/QuestionEl';
 import ConfiguratorEl from '../../components/elements/ConfiguratorEl';
 import QuizEl from '../../components/elements/QuizEl';
 import CarouselEl from '../../components/elements/CarouselEl';
+import RatingEl from '../../components/elements/RatingEl';
 import {
   FileText, HelpCircle, SlidersHorizontal, Trash2,
   ChevronUp, ChevronDown, X, Check, Layers, Square,
   Users, KeyRound, Unlock, Plus, Trophy,
-  List, BarChart2, AlignLeft, ToggleLeft, ImageIcon, GalleryHorizontal,
+  List, BarChart2, AlignLeft, ToggleLeft, ImageIcon, GalleryHorizontal, Star,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -517,6 +519,40 @@ const CarouselEditor: React.FC<{ element: CarouselElement; onChange: (el: Carous
   );
 };
 
+// ---- Rating editor ----
+
+const RatingEditor: React.FC<{ element: RatingElement; onChange: (el: RatingElement) => void }> = ({ element, onChange }) => {
+  const updateCat = (idx: number, label: string) => {
+    const cats = [...element.categories];
+    cats[idx] = { ...cats[idx], label };
+    onChange({ ...element, categories: cats });
+  };
+
+  return (
+    <div className="ws-el-editor">
+      <label className="ws-label">Titolo (opzionale)</label>
+      <input className="ws-field" type="text" value={element.title} placeholder="Es. Valuta il ristorante"
+        onChange={e => onChange({ ...element, title: e.target.value })} />
+      {element.categories.length > 0 && <label className="ws-label" style={{ marginTop: 14 }}>Categorie da valutare</label>}
+      {element.categories.map((cat, i) => (
+        <div className="ws-option-row" key={cat.id}>
+          <span className="ws-option-num">{i + 1}</span>
+          <input className="ws-field" type="text" value={cat.label} placeholder="Es. Cucina, Servizio, Atmosfera..."
+            onChange={e => updateCat(i, e.target.value)} />
+          {element.categories.length > 1 && (
+            <button className="ws-icon-btn" onClick={() =>
+              onChange({ ...element, categories: element.categories.filter((c: RatingCategory) => c.id !== cat.id) })
+            }><X size={14} /></button>
+          )}
+        </div>
+      ))}
+      <button className="ws-add-option-link" onClick={() =>
+        onChange({ ...element, categories: [...element.categories, { id: uid(), label: '' }] })
+      }>+ Aggiungi categoria</button>
+    </div>
+  );
+};
+
 // ---- Mode dropdown ----
 
 const ModeDropdown: React.FC<{ value: SlideMode; onChange: (m: SlideMode) => void; inlineLabel?: string }> = ({ value, onChange, inlineLabel }) => {
@@ -568,11 +604,12 @@ const ModeDropdown: React.FC<{ value: SlideMode; onChange: (m: SlideMode) => voi
 // ---- Element wrapper ----
 
 const typeConfig: Record<string, { label: string; color: string; Icon: LucideIcon }> = {
-  info:         { label: 'Info / Testo',  color: '#6366f1', Icon: FileText },
-  question:     { label: 'Domanda',       color: '#f59e0b', Icon: HelpCircle },
-  configurator: { label: 'Configuratore', color: '#009999', Icon: SlidersHorizontal },
-  quiz:         { label: 'Quiz',          color: '#e11d48', Icon: Trophy },
-  carousel:     { label: 'Carosello',     color: '#7c3aed', Icon: GalleryHorizontal },
+  info:         { label: 'Info / Testo',     color: '#6366f1', Icon: FileText },
+  question:     { label: 'Domanda',          color: '#f59e0b', Icon: HelpCircle },
+  configurator: { label: 'Configuratore',    color: '#009999', Icon: SlidersHorizontal },
+  quiz:         { label: 'Quiz',             color: '#e11d48', Icon: Trophy },
+  carousel:     { label: 'Carosello',        color: '#7c3aed', Icon: GalleryHorizontal },
+  rating:       { label: 'Valutazione ★',   color: '#d97706', Icon: Star },
 };
 
 const ElWrapper: React.FC<{
@@ -598,6 +635,7 @@ const ElWrapper: React.FC<{
       {element.type === 'configurator' && <ConfiguratorEditor element={element} onChange={el => onChange(el)} />}
       {element.type === 'quiz' && <QuizEditor element={element as QuizElement} onChange={el => onChange(el)} />}
       {element.type === 'carousel' && <CarouselEditor element={element as CarouselElement} onChange={el => onChange(el)} />}
+      {element.type === 'rating' && <RatingEditor element={element as RatingElement} onChange={el => onChange(el)} />}
     </div>
   );
 };
@@ -637,6 +675,7 @@ const SlidePreview: React.FC<{ slide: Slide }> = ({ slide }) => (
                   if (el.type === 'configurator') return <ConfiguratorEl key={el.id} element={el} value={undefined} onChange={() => {}} />;
                   if (el.type === 'quiz') return <QuizEl key={el.id} element={el as QuizElement} value={undefined} onChange={() => {}} />;
                   if (el.type === 'carousel') return <CarouselEl key={el.id} element={el as CarouselElement} value={undefined} onChange={() => {}} />;
+                  if (el.type === 'rating') return <RatingEl key={el.id} element={el as RatingElement} value={undefined} onChange={() => {}} />;
                   return null;
                 })
               )}
@@ -784,6 +823,7 @@ const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
     else if (type === 'question') el = { id: uid(), type: 'question', questionType: 'multiple_choice', text: '', options: ['', ''] };
     else if (type === 'quiz') el = { id: uid(), type: 'quiz', text: '', options: ['', '', '', ''], correctAnswer: 0 } as QuizElement;
     else if (type === 'carousel') el = { id: uid(), type: 'carousel', title: '', items: [] } as CarouselElement;
+    else if (type === 'rating') el = { id: uid(), type: 'rating', title: '', categories: [{ id: uid(), label: '' }, { id: uid(), label: '' }] } as RatingElement;
     else el = { id: uid(), type: 'configurator', title: '', categories: [] };
     setEditing({ ...editing, elements: [...editing.elements, el] });
   };
@@ -948,6 +988,10 @@ const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
                     >
                       <span className="ws-add-el-icon"><Trophy size={20} /></span>
                       <span className="ws-add-el-name">Quiz</span>
+                    </button>
+                    <button className="ws-add-el-btn ws-add-el-btn--rating" onClick={() => addElement('rating')}>
+                      <span className="ws-add-el-icon"><Star size={20} /></span>
+                      <span className="ws-add-el-name">Valutazione</span>
                     </button>
                   </div>
                 </div>

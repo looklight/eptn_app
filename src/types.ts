@@ -64,7 +64,19 @@ export type CarouselElement = {
   items: CarouselItem[];
 };
 
-export type SlideElement = InfoElement | QuestionElement | ConfiguratorElement | QuizElement | CarouselElement;
+export type RatingCategory = {
+  id: string;
+  label: string;
+};
+
+export type RatingElement = {
+  id: string;
+  type: 'rating';
+  title: string;
+  categories: RatingCategory[];
+};
+
+export type SlideElement = InfoElement | QuestionElement | ConfiguratorElement | QuizElement | CarouselElement | RatingElement;
 
 export type SlideMode = 'moderated' | 'pin' | 'autonomous';
 
@@ -78,6 +90,7 @@ export type Slide = {
   elements: SlideElement[];
   showRecap?: boolean;
   imageUrl?: string;
+  thumbnailUrl?: string;
 };
 
 export const getSlideMode = (slide: Slide): SlideMode => {
@@ -97,7 +110,8 @@ export type Workshop = {
 export type ConfigAnswer = Record<string, string | null>;
 export type QuizAnswer = { answer: number; responseTimeMs: number };
 export type CarouselAnswer = string | null;
-export type AnswerValue = string | string[] | number | boolean | ConfigAnswer | QuizAnswer | CarouselAnswer;
+export type RatingAnswer = Record<string, number>; // categoryId → 1..5
+export type AnswerValue = string | string[] | number | boolean | ConfigAnswer | QuizAnswer | CarouselAnswer | RatingAnswer;
 export type Answers = Record<string, AnswerValue>;
 
 export type WorkshopResponse = {

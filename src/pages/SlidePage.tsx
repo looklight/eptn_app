@@ -3,13 +3,14 @@ import { Check, ArrowRight, Eye } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, getDocs, orderBy, query, setDoc, doc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
-import type { Slide, Answers, AnswerValue, ConfigAnswer, QuizElement, QuizAnswer, WorkshopResponse, CarouselElement, CarouselAnswer } from '../types';
+import type { Slide, Answers, AnswerValue, ConfigAnswer, QuizElement, QuizAnswer, WorkshopResponse, CarouselElement, CarouselAnswer, RatingElement, RatingAnswer } from '../types';
 import { getSlideMode } from '../types';
 import InfoEl from '../components/elements/InfoEl';
 import QuestionEl from '../components/elements/QuestionEl';
 import ConfiguratorEl from '../components/elements/ConfiguratorEl';
 import QuizEl from '../components/elements/QuizEl';
 import CarouselEl from '../components/elements/CarouselEl';
+import RatingEl from '../components/elements/RatingEl';
 import PinModal from '../components/PinModal';
 
 const preloadSlideImages = (slide: Slide | undefined) => {
@@ -89,6 +90,19 @@ const AnswersList: React.FC<{ slide: Slide; answers: Answers }> = ({ slide, answ
               <span className="ws-response-answer">
                 {(el as QuizElement).options[qa.answer]} {correct ? '✓' : '✗'} · {(qa.responseTimeMs / 1000).toFixed(1)}s
               </span>
+            </div>
+          );
+        }
+        if (el.type === 'rating') {
+          const ra = answer as RatingAnswer;
+          return (
+            <div key={el.id}>
+              {(el as RatingElement).categories.map(cat => (
+                <div key={cat.id} className="ws-response-item">
+                  <span className="ws-response-question">{cat.label}</span>
+                  <span className="ws-response-answer">{'★'.repeat(ra[cat.id] ?? 0)}{'☆'.repeat(5 - (ra[cat.id] ?? 0))}</span>
+                </div>
+              ))}
             </div>
           );
         }
@@ -476,6 +490,9 @@ const SlidePage: React.FC = () => {
             );
             if (el.type === 'carousel') return (
               <CarouselEl key={el.id} element={el as CarouselElement} value={answers[el.id] as CarouselAnswer | undefined} onChange={v => setAnswer(el.id, v)} />
+            );
+            if (el.type === 'rating') return (
+              <RatingEl key={el.id} element={el as RatingElement} value={answers[el.id] as RatingAnswer | undefined} onChange={v => setAnswer(el.id, v)} />
             );
             return null;
           })}

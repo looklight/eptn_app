@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, doc, onSnapshot, writeBatch } from 'firebase/firestore';
 import { db } from '../../firebase';
-import type { Slide, WorkshopResponse, AnswerValue, ConfigAnswer, CarouselAnswer } from '../../types';
+import type { Slide, WorkshopResponse, AnswerValue, ConfigAnswer, CarouselAnswer, RatingAnswer } from '../../types';
 
 function formatAnswer(answer: AnswerValue, slide: Slide): React.ReactNode {
   if (answer === undefined || answer === null) return '—';
@@ -98,6 +98,19 @@ const ResultsTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
                       <div className="ws-response-item" key={el.id}>
                         <span className="ws-response-question">{el.title || 'Carosello'}</span>
                         <span className="ws-response-answer">{item?.title ?? '—'}</span>
+                      </div>
+                    );
+                  }
+                  if (el.type === 'rating') {
+                    const ra = answer as RatingAnswer;
+                    return (
+                      <div key={el.id}>
+                        {el.categories.map(cat => (
+                          <div className="ws-response-item" key={cat.id}>
+                            <span className="ws-response-question">{cat.label}</span>
+                            <span className="ws-response-answer">{'★'.repeat(ra[cat.id] ?? 0)}{'☆'.repeat(5 - (ra[cat.id] ?? 0))} · {ra[cat.id] ?? 0}/5</span>
+                          </div>
+                        ))}
                       </div>
                     );
                   }
