@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, getDocs, orderBy, query, setDoc, doc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Slide, Answers, AnswerValue, ConfigAnswer, QuizElement, QuizAnswer, WorkshopResponse, CarouselElement, CarouselAnswer, RatingElement, RatingAnswer } from '../types';
+import { buildLeaderboard } from '../utils/leaderboard';
 import { getSlideMode } from '../types';
 import InfoEl from '../components/elements/InfoEl';
 import QuestionEl from '../components/elements/QuestionEl';
@@ -186,36 +187,13 @@ const LeaderboardScreen: React.FC<{
     .filter(qs => qs.length > 0);
 
   const totalQuizCount = quizBySlide.reduce((sum, qs) => sum + qs.length, 0);
-  const allQuizIds = new Set(quizBySlide.flat().map(q => q.id));
 
   // Classifica provvisoria se ci sono altri quiz in slide successive
   const isProvisional = slides.slice(currentSlideIndex + 1).some(s =>
     s.elements.some(e => e.type === 'quiz')
   );
 
-  type Entry = { name: string; id: string; numCorrect: number; totalMs: number };
-  const entries: Entry[] = responses
-    .filter(r => [...allQuizIds].some(id => r.answers?.[id] !== undefined))
-    .map(r => {
-      let numCorrect = 0;
-      let totalMs = 0; // somma dei max-per-slide (timer indipendenti tra slide diverse)
-      quizBySlide.forEach(quizEls => {
-        let slideMaxMs = 0;
-        quizEls.forEach(q => {
-          const qa = r.answers?.[q.id] as QuizAnswer | undefined;
-          if (qa && typeof qa === 'object' && 'responseTimeMs' in qa) {
-            if (qa.answer === q.correctAnswer) {
-              numCorrect++;
-              slideMaxMs = Math.max(slideMaxMs, qa.responseTimeMs);
-            }
-          }
-        });
-        totalMs += slideMaxMs;
-      });
-      return { name: r.name, id: r.id, numCorrect, totalMs };
-    })
-    .sort((a, b) => b.numCorrect - a.numCorrect || a.totalMs - b.totalMs);
-
+  const entries = buildLeaderboard(quizBySlide, responses);
   const myRank = entries.findIndex(e => e.id === sessionId) + 1;
   const myEntry = entries.find(e => e.id === sessionId);
 

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
 import { collection, getDocs, orderBy, query, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
-import type { Slide, WorkshopResponse, QuizAnswer, QuizElement, RatingElement, RatingAnswer } from '../types';
+import type { Slide, WorkshopResponse, QuizElement, RatingElement, RatingAnswer } from '../types';
+import { buildLeaderboard } from '../utils/leaderboard';
 
 const Summary: React.FC = () => {
   const [slides, setSlides] = useState<Slide[]>([]);
@@ -35,31 +36,8 @@ const Summary: React.FC = () => {
     .filter(qs => qs.length > 0);
   const hasQuizzes = quizBySlide.length > 0;
   const totalQuizCount = quizBySlide.reduce((sum, qs) => sum + qs.length, 0);
-  const allQuizIds = new Set(quizBySlide.flat().map(q => q.id));
 
-  type Entry = { name: string; id: string; numCorrect: number; totalMs: number };
-  const entries: Entry[] = responses
-    .filter(r => [...allQuizIds].some(id => r.answers?.[id] !== undefined))
-    .map(r => {
-      let numCorrect = 0;
-      let totalMs = 0;
-      quizBySlide.forEach(quizEls => {
-        let slideMaxMs = 0;
-        quizEls.forEach(q => {
-          const qa = r.answers?.[q.id] as QuizAnswer | undefined;
-          if (qa && typeof qa === 'object' && 'responseTimeMs' in qa) {
-            if (qa.answer === q.correctAnswer) {
-              numCorrect++;
-              slideMaxMs = Math.max(slideMaxMs, qa.responseTimeMs);
-            }
-          }
-        });
-        totalMs += slideMaxMs;
-      });
-      return { name: r.name, id: r.id, numCorrect, totalMs };
-    })
-    .sort((a, b) => b.numCorrect - a.numCorrect || a.totalMs - b.totalMs);
-
+  const entries = buildLeaderboard(quizBySlide, responses);
   const myRank = entries.findIndex(e => e.id === sessionId) + 1;
   const myEntry = entries.find(e => e.id === sessionId);
 

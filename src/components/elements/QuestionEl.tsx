@@ -24,7 +24,7 @@ const QuestionEl: React.FC<Props> = ({ element, value, onChange }) => {
           const letter = String.fromCharCode(65 + i);
           const isSelected = element.multipleSelect ? selected.includes(opt) : value === opt;
           return (
-            <button key={i}
+            <button key={`opt-${i}-${opt}`}
               className={`ws-option-btn ${isSelected ? 'selected' : ''}`}
               onClick={() => element.multipleSelect ? toggleMulti(opt) : onChange(opt)}>
               <span className="ws-option-letter">{letter}</span>

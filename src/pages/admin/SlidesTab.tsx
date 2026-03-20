@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch, deleteField } from 'firebase/firestore';
-import { ref as storageRef, uploadBytesResumable, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { resizeImage, MAX_IMAGE_INPUT_MB } from '../../utils/imageUtils';
+import { ref as storageRef, deleteObject } from 'firebase/storage';
+import { MAX_IMAGE_INPUT_MB } from '../../utils/imageUtils';
+import { useImageUpload } from '../../utils/useImageUpload';
 import { db, storage } from '../../firebase';
 import type {
   Slide, SlideElement, InfoElement, QuestionElement,
@@ -32,61 +33,16 @@ const SlideImageUploader: React.FC<{
   slide: Slide;
   onImageChange: (imageUrl: string | undefined, thumbnailUrl: string | undefined) => void;
 }> = ({ slide, onImageChange }) => {
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [uploadError, setUploadError] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
-  const taskRef = useRef<ReturnType<typeof uploadBytesResumable> | null>(null);
-  const mountedRef = useRef(true);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-      taskRef.current?.cancel();
-    };
-  }, []);
-
-  const handleFile = async (file: File) => {
-    if (!file.type.startsWith('image/')) return;
-    setUploading(true);
-    setUploadError('');
-    setProgress(0);
-    try {
-      const [fullBlob, thumbBlob] = await Promise.all([
-        resizeImage(file, 1920, 0.88),
-        resizeImage(file, 600, 0.82),
-      ]);
-      const meta = { contentType: fullBlob.type };
-
-      const fullRef = storageRef(storage, `slide-images/${slide.id}`);
-      const task = uploadBytesResumable(fullRef, fullBlob, meta);
-      taskRef.current = task;
-
-      await new Promise<void>((resolve, reject) => {
-        task.on('state_changed',
-          snap => { if (mountedRef.current) setProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)); },
-          reject,
-          resolve,
-        );
-      });
-
-      const thumbRef = storageRef(storage, `slide-images/${slide.id}_thumb`);
-      const [fullUrl, thumbResult] = await Promise.all([
-        getDownloadURL(task.snapshot.ref),
-        uploadBytes(thumbRef, thumbBlob, meta),
-      ]);
-      const thumbUrl = await getDownloadURL(thumbResult.ref);
-
+  const { uploading, progress, uploadError, inputRef, handleFile } = useImageUpload({
+    fullPath: `slide-images/${slide.id}`,
+    thumbPath: `slide-images/${slide.id}_thumb`,
+    fullWidth: 1920, thumbWidth: 600,
+    fullQuality: 0.88, thumbQuality: 0.82,
+    async onSuccess(fullUrl, thumbUrl) {
       await updateDoc(doc(db, 'slides', slide.id), { imageUrl: fullUrl, thumbnailUrl: thumbUrl });
-      if (mountedRef.current) { onImageChange(fullUrl, thumbUrl); setUploading(false); }
-    } catch (err) {
-      if (mountedRef.current) {
-        setUploading(false);
-        setUploadError(err instanceof Error ? err.message : `Errore. Max ${MAX_IMAGE_INPUT_MB} MB.`);
-      }
-    }
-  };
+      onImageChange(fullUrl, thumbUrl);
+    },
+  });
 
   const removeImage = async () => {
     await Promise.allSettled([
@@ -110,13 +66,8 @@ const SlideImageUploader: React.FC<{
 
   return (
     <div className="ws-slide-image-upload">
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        style={{ display: 'none' }}
-        onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
-      />
+      <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }}
+        onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
       {uploading ? (
         <div className="ws-slide-image-uploading">
           <div className="ws-slide-image-progress-bar">
@@ -126,11 +77,7 @@ const SlideImageUploader: React.FC<{
         </div>
       ) : (
         <>
-          <button
-            className="ws-slide-image-btn"
-            type="button"
-            onClick={() => inputRef.current?.click()}
-          >
+          <button className="ws-slide-image-btn" type="button" onClick={() => inputRef.current?.click()}>
             <ImageIcon size={15} /> Aggiungi immagine di copertina
           </button>
           {uploadError && <p className="ws-slide-image-error">{uploadError}</p>}
@@ -179,7 +126,7 @@ const QuestionEditor: React.FC<{ element: QuestionElement; onChange: (el: Questi
         <div className="ws-options-editor">
           <label className="ws-label">Opzioni</label>
           {(element.options || []).map((opt, i) => (
-            <div className="ws-option-row" key={i}>
+            <div className="ws-option-row" key={`opt-${i}-${opt}`}>
               <span className="ws-option-num">{String.fromCharCode(65 + i)}</span>
               <input className="ws-field" type="text" value={opt} placeholder={`Opzione ${String.fromCharCode(65 + i)}`}
                 onChange={e => { const o = [...(element.options || [])]; o[i] = e.target.value; onChange({ ...element, options: o }); }} />
@@ -210,13 +157,21 @@ const QuestionEditor: React.FC<{ element: QuestionElement; onChange: (el: Questi
             <div className="ws-scale-range-field">
               <span className="ws-scale-range-label">Min</span>
               <input type="number" className="ws-field" value={element.scaleMin ?? 1} min={0} max={9}
-                onChange={e => onChange({ ...element, scaleMin: Number(e.target.value) })} />
+                onChange={e => {
+                  const min = Number(e.target.value);
+                  const max = element.scaleMax ?? 5;
+                  onChange({ ...element, scaleMin: min, scaleMax: max <= min ? min + 1 : max });
+                }} />
             </div>
             <div className="ws-scale-range-sep">→</div>
             <div className="ws-scale-range-field">
               <span className="ws-scale-range-label">Max</span>
               <input type="number" className="ws-field" value={element.scaleMax ?? 5} min={1} max={10}
-                onChange={e => onChange({ ...element, scaleMax: Number(e.target.value) })} />
+                onChange={e => {
+                  const max = Number(e.target.value);
+                  const min = element.scaleMin ?? 1;
+                  onChange({ ...element, scaleMax: max, scaleMin: min >= max ? max - 1 : min });
+                }} />
             </div>
           </div>
         </div>
@@ -294,7 +249,7 @@ const QuizEditor: React.FC<{ element: QuizElement; onChange: (el: QuizElement) =
     <div className="ws-options-editor" style={{ marginTop: 14 }}>
       <label className="ws-label">Opzioni · segna la risposta corretta con ✓</label>
       {element.options.map((opt, i) => (
-        <div className="ws-option-row" key={i}>
+        <div className="ws-option-row" key={`opt-${i}-${opt}`}>
           <button
             type="button"
             className={`ws-quiz-correct-btn${element.correctAnswer === i ? ' ws-quiz-correct-btn--active' : ''}`}
@@ -350,65 +305,13 @@ const CarouselItemImageUploader: React.FC<{
   thumbnailUrl?: string;
   onImageChange: (imageUrl: string | undefined, thumbnailUrl: string | undefined) => void;
 }> = ({ elementId, itemId, imageUrl, thumbnailUrl, onImageChange }) => {
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [uploadError, setUploadError] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
-  const taskRef = useRef<ReturnType<typeof uploadBytesResumable> | null>(null);
-  const mountedRef = useRef(true);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-      taskRef.current?.cancel();
-    };
-  }, []);
-
-  const handleFile = async (file: File) => {
-    if (!file.type.startsWith('image/')) return;
-    setUploading(true);
-    setUploadError('');
-    setProgress(0);
-    try {
-      const [fullBlob, thumbBlob] = await Promise.all([
-        resizeImage(file, 1200, 0.88),
-        resizeImage(file, 400, 0.80),
-      ]);
-      const meta = { contentType: fullBlob.type };
-
-      // Upload immagine principale con tracking del progresso
-      const fullRef = storageRef(storage, `carousel-images/${elementId}/${itemId}`);
-      const task = uploadBytesResumable(fullRef, fullBlob, meta);
-      taskRef.current = task;
-
-      await new Promise<void>((resolve, reject) => {
-        task.on(
-          'state_changed',
-          snap => {
-            if (mountedRef.current) setProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100));
-          },
-          reject,
-          resolve,
-        );
-      });
-
-      // URL immagine principale + upload thumbnail in parallelo
-      const thumbRef = storageRef(storage, `carousel-images/${elementId}/${itemId}_thumb`);
-      const [fullUrl, thumbResult] = await Promise.all([
-        getDownloadURL(task.snapshot.ref),
-        uploadBytes(thumbRef, thumbBlob, meta),
-      ]);
-      const thumbUrl = await getDownloadURL(thumbResult.ref);
-
-      if (mountedRef.current) { onImageChange(fullUrl, thumbUrl); setUploading(false); }
-    } catch (err) {
-      if (mountedRef.current) {
-        setUploading(false);
-        setUploadError(err instanceof Error ? err.message : `Errore. Max ${MAX_IMAGE_INPUT_MB} MB.`);
-      }
-    }
-  };
+  const { uploading, progress, uploadError, inputRef, handleFile } = useImageUpload({
+    fullPath: `carousel-images/${elementId}/${itemId}`,
+    thumbPath: `carousel-images/${elementId}/${itemId}_thumb`,
+    fullWidth: 1200, thumbWidth: 400,
+    fullQuality: 0.88, thumbQuality: 0.80,
+    onSuccess: onImageChange,
+  });
 
   const removeImage = async () => {
     await Promise.allSettled([
@@ -431,13 +334,8 @@ const CarouselItemImageUploader: React.FC<{
 
   return (
     <div className="ws-carousel-item-img-upload">
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        style={{ display: 'none' }}
-        onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])}
-      />
+      <input ref={inputRef} type="file" accept="image/*" style={{ display: 'none' }}
+        onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
       {uploading ? (
         <div className="ws-slide-image-uploading">
           <div className="ws-slide-image-progress-bar">
@@ -447,11 +345,7 @@ const CarouselItemImageUploader: React.FC<{
         </div>
       ) : (
         <>
-          <button
-            className="ws-carousel-item-img-btn"
-            type="button"
-            onClick={() => inputRef.current?.click()}
-          >
+          <button className="ws-carousel-item-img-btn" type="button" onClick={() => inputRef.current?.click()}>
             <ImageIcon size={13} /> Aggiungi immagine
           </button>
           {uploadError && <p className="ws-slide-image-error">{uploadError}</p>}
