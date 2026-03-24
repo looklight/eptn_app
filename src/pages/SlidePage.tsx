@@ -465,8 +465,10 @@ const SlidePage: React.FC = () => {
   const adminCurrentSlideRef = useRef(-1);
   const leaderboardShownRef = useRef(false);
   const slidesRef = useRef<Slide[]>([]);
+  const answersRef = useRef<Answers>({});
   useEffect(() => { waitingRef.current = waiting; }, [waiting]);
   useEffect(() => { slideIndexRef.current = slideIndex; }, [slideIndex]);
+  useEffect(() => { answersRef.current = answers; }, [answers]);
 
   // Scroll to top after any screen transition (runs after DOM update)
   useEffect(() => { window.scrollTo(0, 0); }, [slideIndex, showingRecap, showingLeaderboard, waiting]);
@@ -511,6 +513,7 @@ const SlidePage: React.FC = () => {
           setShowingLeaderboard(true);
           return;
         }
+        flushRatingStats(slideIndexRef.current, answersRef.current);
         const next = slideIndexRef.current + 1;
         setSlideIndex(next);
         sessionStorage.setItem('ws_slide', String(next));
@@ -532,8 +535,32 @@ const SlidePage: React.FC = () => {
     }, { merge: true }).catch(console.error);
   };
 
+  // Aggiorna ratingStats per gli elementi rating di una slide specifica (best-effort)
+  const flushRatingStats = (slideIdx: number, currentAnswers: Answers) => {
+    if (isPreview) return;
+    const slide = slidesRef.current[slideIdx];
+    if (!slide) return;
+    const statsUpdate: Record<string, unknown> = {};
+    for (const el of slide.elements) {
+      if (el.type !== 'rating') continue;
+      const ra = currentAnswers[el.id] as RatingAnswer | undefined;
+      if (!ra) continue;
+      for (const cat of (el as RatingElement).categories) {
+        const stars = ra[cat.id];
+        if (typeof stars === 'number' && stars > 0) {
+          statsUpdate[`${el.id}.${cat.id}.sum`] = increment(stars);
+          statsUpdate[`${el.id}.${cat.id}.count`] = increment(1);
+        }
+      }
+    }
+    if (Object.keys(statsUpdate).length > 0) {
+      setDoc(doc(db, 'workshop', 'ratingStats'), statsUpdate, { merge: true }).catch(console.error);
+    }
+  };
+
   const advanceSlide = (currentAnswers: Answers) => {
     saveProgress(currentAnswers);
+    flushRatingStats(slideIndex, currentAnswers);
     leaderboardShownRef.current = false;
     const next = slideIndex + 1;
     setSlideIndex(next);
@@ -594,26 +621,9 @@ const SlidePage: React.FC = () => {
       setSubmitError('Errore durante l\'invio. Riprova.');
       return;
     }
-    // Aggiorna ratingStats best-effort: un eventuale fallimento non blocca la navigazione
-    // e non permette double-counting (submittingRef rimane true, navigate avviene subito)
-    const statsUpdate: Record<string, unknown> = {};
-    for (const slide of slides) {
-      for (const el of slide.elements) {
-        if (el.type !== 'rating') continue;
-        const ra = answers[el.id] as RatingAnswer | undefined;
-        if (!ra) continue;
-        for (const cat of (el as RatingElement).categories) {
-          const stars = ra[cat.id];
-          if (typeof stars === 'number' && stars > 0) {
-            statsUpdate[`${el.id}.${cat.id}.sum`] = increment(stars);
-            statsUpdate[`${el.id}.${cat.id}.count`] = increment(1);
-          }
-        }
-      }
-    }
-    if (Object.keys(statsUpdate).length > 0) {
-      setDoc(doc(db, 'workshop', 'ratingStats'), statsUpdate, { merge: true }).catch(console.error);
-    }
+    // Le slide precedenti sono già state aggiornate in advanceSlide/flushRatingStats.
+    // Qui aggiorniamo solo l'ultima slide (che non passa per advanceSlide).
+    flushRatingStats(slideIndex, answers);
     sessionStorage.setItem('ws_summary_name', name || '');
     sessionStorage.setItem('ws_summary_session_id', getSessionId());
     sessionStorage.removeItem('ws_slide');
