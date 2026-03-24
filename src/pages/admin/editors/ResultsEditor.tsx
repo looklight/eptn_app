@@ -24,10 +24,13 @@ const ResultsEditor: React.FC<{ element: ResultsElement; onChange: (el: ResultsE
       }))
   );
 
+  // Compatibilità con elementi salvati con la vecchia struttura (sourceElementId singolo)
+  const currentIds: string[] = element.sourceElementIds ?? [];
+
   const toggle = (elementId: string) => {
-    const ids = element.sourceElementIds.includes(elementId)
-      ? element.sourceElementIds.filter(id => id !== elementId)
-      : [...element.sourceElementIds, elementId];
+    const ids = currentIds.includes(elementId)
+      ? currentIds.filter(id => id !== elementId)
+      : [...currentIds, elementId];
     onChange({ ...element, sourceElementIds: ids });
   };
 
@@ -43,7 +46,7 @@ const ResultsEditor: React.FC<{ element: ResultsElement; onChange: (el: ResultsE
             <label key={o.elementId} className="ws-results-source-option">
               <input
                 type="checkbox"
-                checked={element.sourceElementIds.includes(o.elementId)}
+                checked={currentIds.includes(o.elementId)}
                 onChange={() => toggle(o.elementId)}
               />
               <span>{o.label}</span>

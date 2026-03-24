@@ -200,7 +200,7 @@ const ResultsElView: React.FC<{ element: ResultsElement; slides: Slide[]; answer
   // ricalcoli ad ogni aggiornamento di stats
   const sourceEls = React.useMemo((): (RatingElement | QuizElement)[] => {
     const result: (RatingElement | QuizElement)[] = [];
-    for (const id of element.sourceElementIds) {
+    for (const id of (element.sourceElementIds ?? [])) {
       for (const s of slides) {
         const el = s.elements.find(e => e.id === id);
         if (el && (el.type === 'rating' || el.type === 'quiz')) {

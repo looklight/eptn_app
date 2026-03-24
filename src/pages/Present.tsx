@@ -570,7 +570,7 @@ const Present: React.FC = () => {
               {slide.elements.filter(el => el.type === 'results').map(el => {
                 const resultsEl = el as ResultsElement;
 
-                if (resultsEl.sourceElementIds.length === 0) return (
+                if ((resultsEl.sourceElementIds ?? []).length === 0) return (
                   <div key={el.id} className="ws-present-el">
                     <div className="ws-present-no-data">Elemento risultati non configurato</div>
                   </div>
@@ -578,7 +578,7 @@ const Present: React.FC = () => {
 
                 // Trova tutti gli elementi sorgente nell'ordine scelto dall'admin
                 const sourceEls: (RatingElement | QuizElement)[] = [];
-                for (const id of resultsEl.sourceElementIds) {
+                for (const id of (resultsEl.sourceElementIds ?? [])) {
                   for (const s of sorted) {
                     const found = s.elements.find(e => e.id === id);
                     if (found && (found.type === 'rating' || found.type === 'quiz')) {
