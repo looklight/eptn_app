@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Check, ArrowRight, Eye } from 'lucide-react';
+import { Check, ArrowRight, Eye, ChevronDown } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, getDocs, orderBy, query, setDoc, doc, serverTimestamp, onSnapshot, increment } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -191,6 +191,12 @@ const RatingGroupSection: React.FC<{ slide: Slide }> = ({ slide }) => {
 
 const ResultsElView: React.FC<{ element: ResultsElement; slides: Slide[]; answers: Answers }> = ({ element, slides, answers }) => {
   const [stats, setStats] = useState<RatingStats>({});
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) => setExpanded(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
 
   // Trova tutti gli elementi sorgente (solo rating e quiz)
   const sourceEls: (RatingElement | QuizElement)[] = [];
@@ -246,9 +252,10 @@ const ResultsElView: React.FC<{ element: ResultsElement; slides: Slide[]; answer
         if (sourceEl.type === 'rating') {
           const rating = sourceEl as RatingElement;
           const overallAvg = ratingAvgs.get(rating.id) ?? null;
+          const isOpen = expanded.has(rating.id);
           return (
             <div key={rating.id} className="ws-results-el">
-              <div className="ws-results-el-header">
+              <div className="ws-results-el-header ws-results-el-header--clickable" onClick={() => toggleExpanded(rating.id)}>
                 {overallAvg !== null && (
                   <span className="ws-results-el-rank">#{rank + 1}</span>
                 )}
@@ -256,28 +263,33 @@ const ResultsElView: React.FC<{ element: ResultsElement; slides: Slide[]; answer
                 {overallAvg !== null && (
                   <span className="ws-results-el-overall">{overallAvg.toFixed(1)} ★</span>
                 )}
+                <span className={`ws-results-chevron${isOpen ? ' ws-results-chevron--open' : ''}`}>
+                  <ChevronDown size={15} />
+                </span>
               </div>
-              <div className="ws-results-cats">
-                {rating.categories.map(cat => {
-                  const s = stats[rating.id]?.[cat.id];
-                  const avg = s && s.count > 0 ? s.sum / s.count : null;
-                  return (
-                    <div key={cat.id} className="ws-results-cat-row">
-                      <span className="ws-results-cat-label">{cat.label}</span>
-                      {avg !== null ? (
-                        <>
-                          <span className="ws-results-cat-stars">
-                            {'★'.repeat(Math.round(avg))}{'☆'.repeat(5 - Math.round(avg))}
-                          </span>
-                          <span className="ws-results-cat-avg">{avg.toFixed(1)}</span>
-                        </>
-                      ) : (
-                        <span className="ws-results-cat-avg">—</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              {isOpen && (
+                <div className="ws-results-cats">
+                  {rating.categories.map(cat => {
+                    const s = stats[rating.id]?.[cat.id];
+                    const avg = s && s.count > 0 ? s.sum / s.count : null;
+                    return (
+                      <div key={cat.id} className="ws-results-cat-row">
+                        <span className="ws-results-cat-label">{cat.label}</span>
+                        {avg !== null ? (
+                          <>
+                            <span className="ws-results-cat-stars">
+                              {'★'.repeat(Math.round(avg))}{'☆'.repeat(5 - Math.round(avg))}
+                            </span>
+                            <span className="ws-results-cat-avg">{avg.toFixed(1)}</span>
+                          </>
+                        ) : (
+                          <span className="ws-results-cat-avg">—</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         }

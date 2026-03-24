@@ -1096,6 +1096,23 @@
   white-space: nowrap;
 }
 
+.ws-results-el-header--clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.ws-results-chevron {
+  display: flex;
+  align-items: center;
+  color: var(--ws-muted);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.ws-results-chevron--open {
+  transform: rotate(180deg);
+}
+
 .ws-results-no-data {
   color: var(--ws-muted);
   font-size: 14px;

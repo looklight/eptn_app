@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Users, Unlock, KeyRound, CheckCircle2, QrCode } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Users, Unlock, KeyRound, CheckCircle2, QrCode } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { collection, onSnapshot, query, orderBy, getDocs, doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -27,6 +27,12 @@ const Present: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState<number>(-1);
   const [showLobby, setShowLobby] = useState<boolean>(true);
   const [workshopName, setWorkshopName] = useState<string>('');
+  const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set());
+  const toggleResult = (id: string) => setExpandedResults(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
 
   useEffect(() => {
     const loadSlides = async () => {
@@ -624,41 +630,51 @@ const Present: React.FC = () => {
                       if (sourceEl.type === 'rating') {
                         const rating = sourceEl as RatingElement;
                         const overallAvg = ratingAvgs.get(rating.id) ?? null;
+                        const isOpen = expandedResults.has(rating.id);
                         return (
                           <div key={rating.id} className="ws-present-el">
-                            <div className="ws-present-el-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div
+                              className="ws-present-el-label ws-present-el-label--clickable"
+                              onClick={() => toggleResult(rating.id)}
+                              style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+                            >
                               {overallAvg !== null && <span style={{ color: 'var(--ws-muted)', fontWeight: 400, fontSize: 13 }}>#{rank + 1}</span>}
-                              <span>{rating.title || 'Valutazione'}</span>
+                              <span style={{ flex: 1 }}>{rating.title || 'Valutazione'}</span>
                               {overallAvg !== null && (
-                                <span style={{ marginLeft: 'auto', color: '#f59e0b', fontWeight: 700, fontSize: 15 }}>
+                                <span style={{ color: '#f59e0b', fontWeight: 700, fontSize: 15 }}>
                                   {overallAvg.toFixed(1)} ★
                                 </span>
                               )}
+                              <span className={`ws-results-chevron${isOpen ? ' ws-results-chevron--open' : ''}`}>
+                                <ChevronDown size={14} />
+                              </span>
                             </div>
                             <div className="ws-present-el-meta">{count} risposte</div>
-                            <div className="ws-results-cats">
-                              {rating.categories.map(cat => {
-                                let sum = 0, n = 0;
-                                answered.forEach(r => {
-                                  const v = (r.answers[rating.id] as RatingAnswer)?.[cat.id];
-                                  if (v && v >= 1 && v <= 5) { sum += v; n++; }
-                                });
-                                const avg = n > 0 ? sum / n : null;
-                                return (
-                                  <div key={cat.id} className="ws-results-cat-row">
-                                    <span className="ws-results-cat-label">{cat.label}</span>
-                                    {avg !== null ? (
-                                      <>
-                                        <span className="ws-results-cat-stars">
-                                          {'★'.repeat(Math.round(avg))}{'☆'.repeat(5 - Math.round(avg))}
-                                        </span>
-                                        <span className="ws-results-cat-avg">{avg.toFixed(1)}</span>
-                                      </>
-                                    ) : <span className="ws-results-cat-avg">—</span>}
-                                  </div>
-                                );
-                              })}
-                            </div>
+                            {isOpen && (
+                              <div className="ws-results-cats">
+                                {rating.categories.map(cat => {
+                                  let sum = 0, n = 0;
+                                  answered.forEach(r => {
+                                    const v = (r.answers[rating.id] as RatingAnswer)?.[cat.id];
+                                    if (v && v >= 1 && v <= 5) { sum += v; n++; }
+                                  });
+                                  const avg = n > 0 ? sum / n : null;
+                                  return (
+                                    <div key={cat.id} className="ws-results-cat-row">
+                                      <span className="ws-results-cat-label">{cat.label}</span>
+                                      {avg !== null ? (
+                                        <>
+                                          <span className="ws-results-cat-stars">
+                                            {'★'.repeat(Math.round(avg))}{'☆'.repeat(5 - Math.round(avg))}
+                                          </span>
+                                          <span className="ws-results-cat-avg">{avg.toFixed(1)}</span>
+                                        </>
+                                      ) : <span className="ws-results-cat-avg">—</span>}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         );
                       }
