@@ -189,96 +189,97 @@ const RatingGroupSection: React.FC<{ slide: Slide }> = ({ slide }) => {
 
 // ---- Results element view (shown to users on a results slide) ----
 
-const RatingResultsEl: React.FC<{ sourceElement: RatingElement }> = ({ sourceElement }) => {
+const ResultsElView: React.FC<{ element: ResultsElement; slides: Slide[]; answers: Answers }> = ({ element, slides, answers }) => {
   const [stats, setStats] = useState<RatingStats>({});
 
+  // Trova tutti gli elementi sorgente (solo rating e quiz)
+  const sourceEls: (RatingElement | QuizElement)[] = [];
+  for (const id of element.sourceElementIds) {
+    for (const s of slides) {
+      const el = s.elements.find(e => e.id === id);
+      if (el && (el.type === 'rating' || el.type === 'quiz')) {
+        sourceEls.push(el as RatingElement | QuizElement);
+        break;
+      }
+    }
+  }
+
+  const hasRating = sourceEls.some(e => e.type === 'rating');
+
   useEffect(() => {
+    if (!hasRating) return;
     return onSnapshot(doc(db, 'workshop', 'ratingStats'), snap =>
       setStats((snap.data() ?? {}) as RatingStats)
     );
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const ranked = sourceElement.categories.map(cat => {
-    const s = stats[sourceElement.id]?.[cat.id];
-    const avg = s && s.count > 0 ? s.sum / s.count : 0;
-    return { cat, avg };
-  }).filter(r => r.avg > 0).sort((a, b) => b.avg - a.avg);
-
-  const maxAvg = ranked[0]?.avg ?? 0;
-
-  if (ranked.length === 0) {
-    return (
-      <div className="ws-results-el">
-        {sourceElement.title && <div className="ws-results-el-title">{sourceElement.title}</div>}
-        <div className="ws-results-no-data">Nessun dato disponibile</div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="ws-results-el">
-      {sourceElement.title && <div className="ws-results-el-title">{sourceElement.title}</div>}
-      <div className="ws-results-ranking">
-        {ranked.map((item, i) => {
-          const isWinner = item.avg === maxAvg;
-          return (
-            <div key={item.cat.id} className={`ws-results-rank-row${isWinner ? ' ws-results-rank-row--winner' : ''}`}>
-              <span className="ws-results-rank-pos">{isWinner ? '🏆' : `#${i + 1}`}</span>
-              <span className="ws-results-rank-label">{item.cat.label}</span>
-              <span className="ws-results-rank-stars" style={{ color: '#f59e0b' }}>
-                {'★'.repeat(Math.round(item.avg))}{'☆'.repeat(5 - Math.round(item.avg))}
-              </span>
-              <span className="ws-results-rank-avg">{item.avg.toFixed(1)}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
-
-const QuizResultsEl: React.FC<{ sourceElement: QuizElement; userAnswer?: QuizAnswer }> = ({ sourceElement, userAnswer }) => (
-  <div className="ws-results-el">
-    <div className="ws-results-el-title">{sourceElement.text}</div>
-    <div className="ws-results-quiz-options">
-      {sourceElement.options.map((opt, i) => {
-        const isCorrect = i === sourceElement.correctAnswer;
-        const isMine = userAnswer?.answer === i;
-        return (
-          <div
-            key={i}
-            className={`ws-results-quiz-opt${isCorrect ? ' ws-results-quiz-opt--correct' : ''}${isMine && !isCorrect ? ' ws-results-quiz-opt--wrong' : ''}`}
-          >
-            <span className="ws-results-quiz-opt-marker">
-              {isCorrect ? '✓' : isMine ? '✗' : ''}
-            </span>
-            <span>{opt}</span>
-            {isMine && <span className="ws-results-quiz-opt-mine">← tua risposta</span>}
-          </div>
-        );
-      })}
-    </div>
-  </div>
-);
-
-const ResultsElView: React.FC<{ element: ResultsElement; slides: Slide[]; answers: Answers }> = ({ element, slides, answers }) => {
-  const sourceSlide = slides.find(s => s.id === element.sourceSlideId);
-  const sourceEl = sourceSlide?.elements.find(e => e.id === element.sourceElementId);
-
-  if (!sourceEl) return (
+  if (sourceEls.length === 0) return (
     <div className="ws-results-el">
       <div className="ws-results-no-data">Elemento non configurato</div>
     </div>
   );
 
-  if (sourceEl.type === 'rating') return <RatingResultsEl sourceElement={sourceEl as RatingElement} />;
-  if (sourceEl.type === 'quiz') return (
-    <QuizResultsEl
-      sourceElement={sourceEl as QuizElement}
-      userAnswer={answers[sourceEl.id] as QuizAnswer | undefined}
-    />
+  return (
+    <>
+      {sourceEls.map(sourceEl => {
+        if (sourceEl.type === 'rating') {
+          const rating = sourceEl as RatingElement;
+          return (
+            <div key={rating.id} className="ws-results-el">
+              {rating.title && <div className="ws-results-el-title">{rating.title}</div>}
+              <div className="ws-results-cats">
+                {rating.categories.map(cat => {
+                  const s = stats[rating.id]?.[cat.id];
+                  const avg = s && s.count > 0 ? s.sum / s.count : null;
+                  return (
+                    <div key={cat.id} className="ws-results-cat-row">
+                      <span className="ws-results-cat-label">{cat.label}</span>
+                      {avg !== null ? (
+                        <>
+                          <span className="ws-results-cat-stars">
+                            {'★'.repeat(Math.round(avg))}{'☆'.repeat(5 - Math.round(avg))}
+                          </span>
+                          <span className="ws-results-cat-avg">{avg.toFixed(1)}</span>
+                        </>
+                      ) : (
+                        <span className="ws-results-cat-avg">—</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
+        if (sourceEl.type === 'quiz') {
+          const quiz = sourceEl as QuizElement;
+          const userAnswer = answers[quiz.id] as QuizAnswer | undefined;
+          return (
+            <div key={quiz.id} className="ws-results-el">
+              <div className="ws-results-el-title">{quiz.text}</div>
+              <div className="ws-results-quiz-options">
+                {quiz.options.map((opt, i) => {
+                  const isCorrect = i === quiz.correctAnswer;
+                  const isMine = userAnswer?.answer === i;
+                  return (
+                    <div
+                      key={i}
+                      className={`ws-results-quiz-opt${isCorrect ? ' ws-results-quiz-opt--correct' : ''}${isMine && !isCorrect ? ' ws-results-quiz-opt--wrong' : ''}`}
+                    >
+                      <span className="ws-results-quiz-opt-marker">{isCorrect ? '✓' : isMine ? '✗' : ''}</span>
+                      <span>{opt}</span>
+                      {isMine && <span className="ws-results-quiz-opt-mine">← tua risposta</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
+        return null;
+      })}
+    </>
   );
-  return null;
 };
 
 // ---- Recap screen ----

@@ -904,6 +904,34 @@
 .ws-add-el-btn--results       { color: #059669; border-color: #a7f3d0; background: #ecfdf5; }
 .ws-add-el-btn--results:hover { background: #d1fae5; border-color: #059669; box-shadow: 0 2px 8px rgba(5,150,105,0.15); }
 
+.ws-results-source-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.ws-results-source-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--ws-border);
+  cursor: pointer;
+  font-size: 13px;
+  user-select: none;
+}
+
+.ws-results-source-option:hover { background: var(--ws-bg); }
+
+.ws-results-source-option input[type="checkbox"] {
+  accent-color: #059669;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
 .ws-field-hint { font-size: 12px; color: var(--ws-muted); margin: 2px 0 8px; }
 
 /* ---- Carousel item editor (admin) ---- */

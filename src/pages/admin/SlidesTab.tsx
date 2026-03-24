@@ -133,7 +133,7 @@ const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
     else if (type === 'quiz') el = { id: uid(), type: 'quiz', text: '', options: ['', '', '', ''], correctAnswer: 0 } as QuizElement;
     else if (type === 'carousel') el = { id: uid(), type: 'carousel', title: '', items: [] } as CarouselElement;
     else if (type === 'rating') el = { id: uid(), type: 'rating', title: '', categories: [{ id: uid(), label: '' }, { id: uid(), label: '' }] } as RatingElement;
-    else if (type === 'results') el = { id: uid(), type: 'results', sourceElementId: '', sourceSlideId: '' } as ResultsElement;
+    else if (type === 'results') el = { id: uid(), type: 'results', sourceElementIds: [] } as ResultsElement;
     else el = { id: uid(), type: 'configurator', title: '', categories: [] };
     setEditing({ ...editing, elements: [...editing.elements, el] });
   };

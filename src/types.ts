@@ -80,8 +80,7 @@ export type RatingElement = {
 export type ResultsElement = {
   id: string;
   type: 'results';
-  sourceElementId: string; // ID dell'elemento rating/quiz di riferimento
-  sourceSlideId: string;   // ID della slide che contiene quell'elemento
+  sourceElementIds: string[]; // IDs degli elementi rating/quiz da mostrare
 };
 
 export type SlideElement = InfoElement | QuestionElement | ConfiguratorElement | QuizElement | CarouselElement | RatingElement | ResultsElement;

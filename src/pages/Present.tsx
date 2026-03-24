@@ -563,109 +563,117 @@ const Present: React.FC = () => {
               {/* Results elements */}
               {slide.elements.filter(el => el.type === 'results').map(el => {
                 const resultsEl = el as ResultsElement;
-                const sourceSlide = sorted.find(s => s.id === resultsEl.sourceSlideId);
-                const sourceEl = sourceSlide?.elements.find(e => e.id === resultsEl.sourceElementId);
 
-                if (!sourceEl) return (
+                if (resultsEl.sourceElementIds.length === 0) return (
                   <div key={el.id} className="ws-present-el">
                     <div className="ws-present-no-data">Elemento risultati non configurato</div>
                   </div>
                 );
 
-                const answered = responses.filter(r => r.answers?.[sourceEl.id] !== undefined);
-                const count = answered.length;
+                // Trova tutti gli elementi sorgente nell'ordine scelto dall'admin
+                const sourceEls: (RatingElement | QuizElement)[] = [];
+                for (const id of resultsEl.sourceElementIds) {
+                  for (const s of sorted) {
+                    const found = s.elements.find(e => e.id === id);
+                    if (found && (found.type === 'rating' || found.type === 'quiz')) {
+                      sourceEls.push(found as RatingElement | QuizElement);
+                      break;
+                    }
+                  }
+                }
 
-                if (count === 0) return (
-                  <div key={el.id} className="ws-present-el">
-                    <div className="ws-present-el-label">
-                      {sourceEl.type === 'rating' ? (sourceEl as RatingElement).title || 'Valutazione' : (sourceEl as { text: string }).text || 'Quiz'}
-                    </div>
-                    <div className="ws-present-no-data">Nessuna risposta ancora</div>
+                return (
+                  <div key={el.id}>
+                    {sourceEls.map(sourceEl => {
+                      const answered = responses.filter(r => r.answers?.[sourceEl.id] !== undefined);
+                      const count = answered.length;
+
+                      if (count === 0) return (
+                        <div key={sourceEl.id} className="ws-present-el">
+                          <div className="ws-present-el-label">
+                            {sourceEl.type === 'rating' ? (sourceEl as RatingElement).title || 'Valutazione' : (sourceEl as QuizElement).text || 'Quiz'}
+                          </div>
+                          <div className="ws-present-no-data">Nessuna risposta ancora</div>
+                        </div>
+                      );
+
+                      if (sourceEl.type === 'rating') {
+                        const rating = sourceEl as RatingElement;
+                        return (
+                          <div key={rating.id} className="ws-present-el">
+                            <div className="ws-present-el-label">{rating.title || 'Valutazione'}</div>
+                            <div className="ws-present-el-meta">{count} risposte</div>
+                            <div className="ws-results-cats">
+                              {rating.categories.map(cat => {
+                                let sum = 0, n = 0;
+                                answered.forEach(r => {
+                                  const v = (r.answers[rating.id] as RatingAnswer)?.[cat.id];
+                                  if (v && v >= 1 && v <= 5) { sum += v; n++; }
+                                });
+                                const avg = n > 0 ? sum / n : null;
+                                return (
+                                  <div key={cat.id} className="ws-results-cat-row">
+                                    <span className="ws-results-cat-label">{cat.label}</span>
+                                    {avg !== null ? (
+                                      <>
+                                        <span className="ws-results-cat-stars">
+                                          {'★'.repeat(Math.round(avg))}{'☆'.repeat(5 - Math.round(avg))}
+                                        </span>
+                                        <span className="ws-results-cat-avg">{avg.toFixed(1)}</span>
+                                      </>
+                                    ) : <span className="ws-results-cat-avg">—</span>}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (sourceEl.type === 'quiz') {
+                        const quizEl = sourceEl as QuizElement;
+                        const counts = Array(quizEl.options.length).fill(0) as number[];
+                        let correctCount = 0;
+                        answered.forEach(r => {
+                          const qa = r.answers[quizEl.id] as QuizAnswer;
+                          if (qa && typeof qa === 'object' && 'responseTimeMs' in qa) {
+                            if (qa.answer >= 0 && qa.answer < counts.length) counts[qa.answer]++;
+                            if (qa.answer === quizEl.correctAnswer) correctCount++;
+                          }
+                        });
+                        const maxCount = Math.max(...counts, 1);
+                        return (
+                          <div key={quizEl.id} className="ws-present-el">
+                            <div className="ws-present-el-label">{quizEl.text}</div>
+                            <div className="ws-present-el-meta">
+                              {count} risposte · {correctCount} corrette ({Math.round((correctCount / count) * 100)}%)
+                            </div>
+                            <div className="ws-present-bars">
+                              {quizEl.options.map((opt, i) => (
+                                <div key={i} className="ws-present-bar-row">
+                                  <span className="ws-present-bar-label">
+                                    {i === quizEl.correctAnswer ? '✓ ' : ''}{opt}
+                                  </span>
+                                  <div className="ws-present-bar-track">
+                                    <div
+                                      className={`ws-present-bar-fill${i === quizEl.correctAnswer ? ' ws-present-bar-fill--correct' : ''}`}
+                                      style={{ width: `${(counts[i] / maxCount) * 100}%` }}
+                                    />
+                                  </div>
+                                  <span className="ws-present-bar-val">
+                                    {counts[i]} <span className="ws-present-bar-pct">({Math.round((counts[i] / count) * 100)}%)</span>
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    })}
                   </div>
                 );
-
-                /* Rating results */
-                if (sourceEl.type === 'rating') {
-                  const rating = sourceEl as RatingElement;
-                  const catAvgs = rating.categories.map(cat => {
-                    let sum = 0, n = 0;
-                    answered.forEach(r => {
-                      const v = (r.answers[sourceEl.id] as RatingAnswer)?.[cat.id];
-                      if (v && v >= 1 && v <= 5) { sum += v; n++; }
-                    });
-                    return { cat, avg: n > 0 ? sum / n : 0 };
-                  });
-                  const ranked = [...catAvgs].filter(s => s.avg > 0).sort((a, b) => b.avg - a.avg);
-                  const maxAvg = ranked[0]?.avg ?? 0;
-                  return (
-                    <div key={el.id} className="ws-present-el">
-                      <div className="ws-present-el-label">{rating.title || 'Valutazione'}</div>
-                      <div className="ws-present-el-meta">{count} risposte</div>
-                      {maxAvg > 0 && (
-                        <div className="ws-present-rating-ranking">
-                          {ranked.map((item, i) => {
-                            const isWinner = item.avg === maxAvg;
-                            return (
-                              <div key={item.cat.id} className={`ws-present-rating-rank-row${isWinner ? ' ws-present-rating-rank-row--winner' : ''}`}>
-                                <span className="ws-present-rating-rank-pos">
-                                  {isWinner ? '🏆' : `#${i + 1}`}
-                                </span>
-                                <span className="ws-present-rating-rank-label">{item.cat.label}</span>
-                                <span className="ws-present-rating-rank-stars">
-                                  {'★'.repeat(Math.round(item.avg))}{'☆'.repeat(5 - Math.round(item.avg))}
-                                </span>
-                                <span className="ws-present-rating-rank-avg">{item.avg.toFixed(1)}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-
-                /* Quiz results */
-                if (sourceEl.type === 'quiz') {
-                  const quizEl = sourceEl as QuizElement;
-                  const counts = Array(quizEl.options.length).fill(0) as number[];
-                  let correctCount = 0;
-                  answered.forEach(r => {
-                    const qa = r.answers[sourceEl.id] as QuizAnswer;
-                    if (qa && typeof qa === 'object' && 'responseTimeMs' in qa) {
-                      if (qa.answer >= 0 && qa.answer < counts.length) counts[qa.answer]++;
-                      if (qa.answer === quizEl.correctAnswer) correctCount++;
-                    }
-                  });
-                  const maxCount = Math.max(...counts, 1);
-                  return (
-                    <div key={el.id} className="ws-present-el">
-                      <div className="ws-present-el-label">{quizEl.text}</div>
-                      <div className="ws-present-el-meta">
-                        {count} risposte · {correctCount} corrette ({Math.round((correctCount / count) * 100)}%)
-                      </div>
-                      <div className="ws-present-bars">
-                        {quizEl.options.map((opt, i) => (
-                          <div key={i} className="ws-present-bar-row">
-                            <span className="ws-present-bar-label">
-                              {i === quizEl.correctAnswer ? '✓ ' : ''}{opt}
-                            </span>
-                            <div className="ws-present-bar-track">
-                              <div
-                                className={`ws-present-bar-fill${i === quizEl.correctAnswer ? ' ws-present-bar-fill--correct' : ''}`}
-                                style={{ width: `${(counts[i] / maxCount) * 100}%` }}
-                              />
-                            </div>
-                            <span className="ws-present-bar-val">
-                              {counts[i]} <span className="ws-present-bar-pct">({Math.round((counts[i] / count) * 100)}%)</span>
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                }
-
-                return null;
               })}
             </div>
 
