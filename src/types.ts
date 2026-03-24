@@ -77,6 +77,8 @@ export type RatingElement = {
   showSummary?: boolean; // mostra nel riepilogo finale per il confronto
 };
 
+export type RatingStats = Record<string, Record<string, { sum: number; count: number }>>;
+
 export type ResultsElement = {
   id: string;
   type: 'results';

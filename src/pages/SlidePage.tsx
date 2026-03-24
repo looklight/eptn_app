@@ -3,7 +3,7 @@ import { Check, ArrowRight, Eye, ChevronDown } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { collection, getDocs, orderBy, query, setDoc, doc, serverTimestamp, onSnapshot, increment } from 'firebase/firestore';
 import { db } from '../firebase';
-import type { Slide, Answers, AnswerValue, ConfigAnswer, QuizElement, QuizAnswer, WorkshopResponse, CarouselElement, CarouselAnswer, RatingElement, RatingAnswer, ResultsElement } from '../types';
+import type { Slide, Answers, AnswerValue, ConfigAnswer, QuizElement, QuizAnswer, WorkshopResponse, CarouselElement, CarouselAnswer, RatingElement, RatingAnswer, ResultsElement, RatingStats } from '../types';
 import { buildLeaderboard } from '../utils/leaderboard';
 import { getSlideMode } from '../types';
 import InfoEl from '../components/elements/InfoEl';
@@ -126,8 +126,6 @@ const AnswersList: React.FC<{ slide: Slide; answers: Answers }> = ({ slide, answ
 
 // ---- Rating group average (shown in recap/waiting when showSummary is enabled) ----
 
-type RatingStats = Record<string, Record<string, { sum: number; count: number }>>;
-
 const RatingGroupSection: React.FC<{ slide: Slide }> = ({ slide }) => {
   const [stats, setStats] = useState<RatingStats>({});
 
@@ -198,17 +196,21 @@ const ResultsElView: React.FC<{ element: ResultsElement; slides: Slide[]; answer
     return next;
   });
 
-  // Trova tutti gli elementi sorgente (solo rating e quiz)
-  const sourceEls: (RatingElement | QuizElement)[] = [];
-  for (const id of element.sourceElementIds) {
-    for (const s of slides) {
-      const el = s.elements.find(e => e.id === id);
-      if (el && (el.type === 'rating' || el.type === 'quiz')) {
-        sourceEls.push(el as RatingElement | QuizElement);
-        break;
+  // Trova tutti gli elementi sorgente (solo rating e quiz) — memoizzato per evitare
+  // ricalcoli ad ogni aggiornamento di stats
+  const sourceEls = React.useMemo((): (RatingElement | QuizElement)[] => {
+    const result: (RatingElement | QuizElement)[] = [];
+    for (const id of element.sourceElementIds) {
+      for (const s of slides) {
+        const el = s.elements.find(e => e.id === id);
+        if (el && (el.type === 'rating' || el.type === 'quiz')) {
+          result.push(el as RatingElement | QuizElement);
+          break;
+        }
       }
     }
-  }
+    return result;
+  }, [element.sourceElementIds, slides]);
 
   const hasRating = sourceEls.some(e => e.type === 'rating');
 
@@ -217,6 +219,7 @@ const ResultsElView: React.FC<{ element: ResultsElement; slides: Slide[]; answer
     return onSnapshot(doc(db, 'workshop', 'ratingStats'), snap =>
       setStats((snap.data() ?? {}) as RatingStats)
     );
+    // slides e element non cambiano durante la sessione: caricati una volta sola
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (sourceEls.length === 0) return (
