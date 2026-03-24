@@ -27,6 +27,7 @@ const Present: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState<number>(-1);
   const [showLobby, setShowLobby] = useState<boolean>(true);
   const [workshopName, setWorkshopName] = useState<string>('');
+  const [revealedElements, setRevealedElements] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadSlides = async () => {
@@ -55,6 +56,14 @@ const Present: React.FC = () => {
 
   const setAdminSlide = (idx: number) => {
     setDoc(doc(db, 'workshop', 'config'), { currentSlide: idx }, { merge: true }).catch(console.error);
+  };
+
+  const toggleReveal = (elId: string) => {
+    setRevealedElements(prev => {
+      const next = new Set(prev);
+      if (next.has(elId)) next.delete(elId); else next.add(elId);
+      return next;
+    });
   };
 
   const sorted = useMemo(() => [...slides].sort((a, b) => a.order - b.order), [slides]);
@@ -384,48 +393,56 @@ const Present: React.FC = () => {
                       .filter(r => { const qa = r.answers[el.id] as QuizAnswer; return qa && 'responseTimeMs' in qa && qa.answer === el.correctAnswer; })
                       .map(r => ({ name: r.name, id: r.id, ms: (r.answers[el.id] as QuizAnswer).responseTimeMs }))
                       .sort((a, b) => a.ms - b.ms);
+                    const revealed = revealedElements.has(el.id);
                     return (
                       <div key={el.id} className="ws-present-el">
                         <div className="ws-present-el-label">{el.text}</div>
                         <div className="ws-present-el-meta">
-                          {count} risposte · {correctCount} corrette ({Math.round((correctCount / count) * 100)}%)
-                          {avgMs > 0 && <> · media {(avgMs / 1000).toFixed(1)}s</>}
+                          {count} risposte
+                          {revealed && <> · {correctCount} corrette ({Math.round((correctCount / count) * 100)}%){avgMs > 0 && <> · media {(avgMs / 1000).toFixed(1)}s</>}</>}
+                          <button className="ws-present-reveal-btn" onClick={() => toggleReveal(el.id)}>
+                            {revealed ? 'Nascondi' : 'Mostra risultati'}
+                          </button>
                         </div>
-                        <div className="ws-present-bars">
-                          {el.options.map((opt, i) => (
-                            <div key={i} className="ws-present-bar-row">
-                              <span className="ws-present-bar-label">
-                                {i === el.correctAnswer ? '✓ ' : ''}{opt}
-                              </span>
-                              <div className="ws-present-bar-track">
-                                <div
-                                  className={`ws-present-bar-fill${i === el.correctAnswer ? ' ws-present-bar-fill--correct' : ''}`}
-                                  style={{ width: `${(counts[i] / maxCount) * 100}%` }}
-                                />
-                              </div>
-                              <span className="ws-present-bar-val">
-                                {counts[i]} <span className="ws-present-bar-pct">({Math.round((counts[i] / count) * 100)}%)</span>
-                              </span>
+                        {revealed && (
+                          <>
+                            <div className="ws-present-bars">
+                              {el.options.map((opt, i) => (
+                                <div key={i} className="ws-present-bar-row">
+                                  <span className="ws-present-bar-label">
+                                    {i === el.correctAnswer ? '✓ ' : ''}{opt}
+                                  </span>
+                                  <div className="ws-present-bar-track">
+                                    <div
+                                      className={`ws-present-bar-fill${i === el.correctAnswer ? ' ws-present-bar-fill--correct' : ''}`}
+                                      style={{ width: `${(counts[i] / maxCount) * 100}%` }}
+                                    />
+                                  </div>
+                                  <span className="ws-present-bar-val">
+                                    {counts[i]} <span className="ws-present-bar-pct">({Math.round((counts[i] / count) * 100)}%)</span>
+                                  </span>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                        {topRanking.length > 0 && (
-                          <div className="ws-present-quiz-leaderboard">
-                            <div className="ws-present-quiz-leaderboard-title">🏆 Classifica — risposte corrette</div>
-                            {topRanking.slice(0, 5).map((e, i) => (
-                              <div key={e.id} className="ws-present-lb-row">
-                                <span className="ws-present-lb-rank">#{i + 1}</span>
-                                <span className="ws-present-lb-name">{e.name}</span>
-                                <span className="ws-present-lb-time">{(e.ms / 1000).toFixed(1)}s</span>
-                              </div>
-                            ))}
-                            {topRanking.length > 5 && (
-                              <div className="ws-present-lb-row" style={{ opacity: 0.5 }}>
-                                <span className="ws-present-lb-rank">···</span>
-                                <span className="ws-present-lb-name">+{topRanking.length - 5} altri</span>
+                            {topRanking.length > 0 && (
+                              <div className="ws-present-quiz-leaderboard">
+                                <div className="ws-present-quiz-leaderboard-title">🏆 Classifica — risposte corrette</div>
+                                {topRanking.slice(0, 5).map((e, i) => (
+                                  <div key={e.id} className="ws-present-lb-row">
+                                    <span className="ws-present-lb-rank">#{i + 1}</span>
+                                    <span className="ws-present-lb-name">{e.name}</span>
+                                    <span className="ws-present-lb-time">{(e.ms / 1000).toFixed(1)}s</span>
+                                  </div>
+                                ))}
+                                {topRanking.length > 5 && (
+                                  <div className="ws-present-lb-row" style={{ opacity: 0.5 }}>
+                                    <span className="ws-present-lb-rank">···</span>
+                                    <span className="ws-present-lb-name">+{topRanking.length - 5} altri</span>
+                                  </div>
+                                )}
                               </div>
                             )}
-                          </div>
+                          </>
                         )}
                       </div>
                     );
@@ -530,11 +547,17 @@ const Present: React.FC = () => {
                     });
                     const ranked = [...catAvgs].filter(s => s.avg > 0).sort((a, b) => b.avg - a.avg);
                     const maxAvg = ranked[0]?.avg ?? 0;
+                    const revealed = revealedElements.has(el.id);
                     return (
                       <div key={el.id} className="ws-present-el">
                         <div className="ws-present-el-label">{rating.title || 'Valutazione'}</div>
-                        <div className="ws-present-el-meta">{count} risposte</div>
-                        {maxAvg > 0 && (
+                        <div className="ws-present-el-meta">
+                          {count} risposte
+                          <button className="ws-present-reveal-btn" onClick={() => toggleReveal(el.id)}>
+                            {revealed ? 'Nascondi' : 'Mostra risultati'}
+                          </button>
+                        </div>
+                        {revealed && maxAvg > 0 && (
                           <div className="ws-present-rating-ranking">
                             {ranked.map((item, i) => {
                               const isWinner = item.avg === maxAvg;
