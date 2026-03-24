@@ -368,28 +368,6 @@
   text-align: center;
 }
 
-.ws-present-reveal-btn {
-  margin-left: 12px;
-  padding: 2px 10px;
-  font-size: 11px;
-  font-weight: 700;
-  font-family: inherit;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  border: 1px solid var(--ws-teal);
-  color: var(--ws-teal);
-  background: transparent;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  vertical-align: middle;
-}
-
-.ws-present-reveal-btn:hover {
-  background: var(--ws-teal);
-  color: white;
-}
-
 .ws-present-no-data {
   font-size: 14px;
   color: var(--ws-muted);
