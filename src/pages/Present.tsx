@@ -582,9 +582,33 @@ const Present: React.FC = () => {
                   }
                 }
 
+                // Media totale per elemento rating (per ordinamento classifica)
+                const ratingAvgs = new Map<string, number>();
+                for (const sourceEl of sourceEls) {
+                  if (sourceEl.type !== 'rating') continue;
+                  const rating = sourceEl as RatingElement;
+                  const answered = responses.filter(r => r.answers?.[rating.id] !== undefined);
+                  let totalSum = 0, totalCount = 0;
+                  for (const cat of rating.categories) {
+                    answered.forEach(r => {
+                      const v = (r.answers[rating.id] as RatingAnswer)?.[cat.id];
+                      if (v && v >= 1 && v <= 5) { totalSum += v; totalCount++; }
+                    });
+                  }
+                  if (totalCount > 0) ratingAvgs.set(rating.id, totalSum / totalCount);
+                }
+
+                const sortedSourceEls = ratingAvgs.size > 0
+                  ? [...sourceEls].sort((a, b) => {
+                      if (a.type === 'rating' && b.type === 'rating')
+                        return (ratingAvgs.get(b.id) ?? 0) - (ratingAvgs.get(a.id) ?? 0);
+                      return 0;
+                    })
+                  : sourceEls;
+
                 return (
                   <div key={el.id}>
-                    {sourceEls.map(sourceEl => {
+                    {sortedSourceEls.map((sourceEl, rank) => {
                       const answered = responses.filter(r => r.answers?.[sourceEl.id] !== undefined);
                       const count = answered.length;
 
@@ -599,9 +623,18 @@ const Present: React.FC = () => {
 
                       if (sourceEl.type === 'rating') {
                         const rating = sourceEl as RatingElement;
+                        const overallAvg = ratingAvgs.get(rating.id) ?? null;
                         return (
                           <div key={rating.id} className="ws-present-el">
-                            <div className="ws-present-el-label">{rating.title || 'Valutazione'}</div>
+                            <div className="ws-present-el-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              {overallAvg !== null && <span style={{ color: 'var(--ws-muted)', fontWeight: 400, fontSize: 13 }}>#{rank + 1}</span>}
+                              <span>{rating.title || 'Valutazione'}</span>
+                              {overallAvg !== null && (
+                                <span style={{ marginLeft: 'auto', color: '#f59e0b', fontWeight: 700, fontSize: 15 }}>
+                                  {overallAvg.toFixed(1)} ★
+                                </span>
+                              )}
+                            </div>
                             <div className="ws-present-el-meta">{count} risposte</div>
                             <div className="ws-results-cats">
                               {rating.categories.map(cat => {

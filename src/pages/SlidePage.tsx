@@ -219,14 +219,44 @@ const ResultsElView: React.FC<{ element: ResultsElement; slides: Slide[]; answer
     </div>
   );
 
+  // Media totale per elemento rating (per ordinamento classifica)
+  const ratingAvgs = new Map<string, number>();
+  for (const el of sourceEls) {
+    if (el.type !== 'rating') continue;
+    const rating = el as RatingElement;
+    let totalSum = 0, totalCount = 0;
+    for (const cat of rating.categories) {
+      const s = stats[rating.id]?.[cat.id];
+      if (s && s.count > 0) { totalSum += s.sum; totalCount += s.count; }
+    }
+    if (totalCount > 0) ratingAvgs.set(rating.id, totalSum / totalCount);
+  }
+
+  const sortedEls = ratingAvgs.size > 0
+    ? [...sourceEls].sort((a, b) => {
+        if (a.type === 'rating' && b.type === 'rating')
+          return (ratingAvgs.get(b.id) ?? 0) - (ratingAvgs.get(a.id) ?? 0);
+        return 0;
+      })
+    : sourceEls;
+
   return (
     <>
-      {sourceEls.map(sourceEl => {
+      {sortedEls.map((sourceEl, rank) => {
         if (sourceEl.type === 'rating') {
           const rating = sourceEl as RatingElement;
+          const overallAvg = ratingAvgs.get(rating.id) ?? null;
           return (
             <div key={rating.id} className="ws-results-el">
-              {rating.title && <div className="ws-results-el-title">{rating.title}</div>}
+              <div className="ws-results-el-header">
+                {overallAvg !== null && (
+                  <span className="ws-results-el-rank">#{rank + 1}</span>
+                )}
+                {rating.title && <span className="ws-results-el-title">{rating.title}</span>}
+                {overallAvg !== null && (
+                  <span className="ws-results-el-overall">{overallAvg.toFixed(1)} ★</span>
+                )}
+              </div>
               <div className="ws-results-cats">
                 {rating.categories.map(cat => {
                   const s = stats[rating.id]?.[cat.id];
