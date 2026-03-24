@@ -223,8 +223,10 @@ const ResultsElView: React.FC<{ element: ResultsElement; slides: Slide[]; answer
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (sourceEls.length === 0) return (
-    <div className="ws-results-el">
-      <div className="ws-results-no-data">Elemento non configurato</div>
+    <div className="ws-results-list">
+      <div className="ws-results-el">
+        <div className="ws-results-no-data">Elemento non configurato</div>
+      </div>
     </div>
   );
 
@@ -249,25 +251,32 @@ const ResultsElView: React.FC<{ element: ResultsElement; slides: Slide[]; answer
       })
     : sourceEls;
 
+  const medals = ['🥇', '🥈', '🥉'];
+
   return (
-    <>
+    <div className="ws-results-list">
       {sortedEls.map((sourceEl, rank) => {
         if (sourceEl.type === 'rating') {
           const rating = sourceEl as RatingElement;
           const overallAvg = ratingAvgs.get(rating.id) ?? null;
           const isOpen = expanded.has(rating.id);
+          const rankIcon = overallAvg !== null ? (rank < 3 ? medals[rank] : `#${rank + 1}`) : null;
           return (
             <div key={rating.id} className="ws-results-el">
               <div className="ws-results-el-header ws-results-el-header--clickable" onClick={() => toggleExpanded(rating.id)}>
-                {overallAvg !== null && (
-                  <span className="ws-results-el-rank">#{rank + 1}</span>
+                {rankIcon !== null && (
+                  <span className={`ws-results-rank-badge${rank >= 3 ? ' ws-results-rank-badge--num' : ''}`}>
+                    {rankIcon}
+                  </span>
                 )}
                 {rating.title && <span className="ws-results-el-title">{rating.title}</span>}
                 {overallAvg !== null && (
-                  <span className="ws-results-el-overall">{overallAvg.toFixed(1)} ★</span>
+                  <span className="ws-results-el-overall">
+                    {overallAvg.toFixed(1)}<span className="ws-results-el-overall-star">★</span>
+                  </span>
                 )}
                 <span className={`ws-results-chevron${isOpen ? ' ws-results-chevron--open' : ''}`}>
-                  <ChevronDown size={15} />
+                  <ChevronDown size={14} />
                 </span>
               </div>
               {isOpen && (
@@ -301,7 +310,9 @@ const ResultsElView: React.FC<{ element: ResultsElement; slides: Slide[]; answer
           const userAnswer = answers[quiz.id] as QuizAnswer | undefined;
           return (
             <div key={quiz.id} className="ws-results-el">
-              <div className="ws-results-el-title">{quiz.text}</div>
+              <div className="ws-results-quiz-header">
+                <div className="ws-results-quiz-title">{quiz.text}</div>
+              </div>
               <div className="ws-results-quiz-options">
                 {quiz.options.map((opt, i) => {
                   const isCorrect = i === quiz.correctAnswer;
@@ -323,7 +334,7 @@ const ResultsElView: React.FC<{ element: ResultsElement; slides: Slide[]; answer
         }
         return null;
       })}
-    </>
+    </div>
   );
 };
 
