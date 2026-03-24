@@ -520,22 +520,46 @@ const Present: React.FC = () => {
                   /* Rating */
                   if (el.type === 'rating') {
                     const rating = el as RatingElement;
+                    const catStats = rating.categories.map(cat => {
+                      const starCounts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+                      answered.forEach(r => {
+                        const ra = r.answers[el.id] as RatingAnswer;
+                        const v = ra?.[cat.id];
+                        if (v && v >= 1 && v <= 5) starCounts[v]++;
+                      });
+                      const catCount = Object.values(starCounts).reduce((a, b) => a + b, 0);
+                      const avg = catCount > 0
+                        ? Object.entries(starCounts).reduce((s, [k, c]) => s + Number(k) * c, 0) / catCount
+                        : 0;
+                      return { cat, starCounts, catCount, avg };
+                    });
+                    const ranked = [...catStats].filter(s => s.avg > 0).sort((a, b) => b.avg - a.avg);
+                    const maxAvg = ranked[0]?.avg ?? 0;
                     return (
                       <div key={el.id} className="ws-present-el">
                         <div className="ws-present-el-label">{rating.title || 'Valutazione'}</div>
                         <div className="ws-present-el-meta">{count} risposte</div>
-                        {rating.categories.map(cat => {
-                          const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-                          answered.forEach(r => {
-                            const ra = r.answers[el.id] as RatingAnswer;
-                            const v = ra?.[cat.id];
-                            if (v && v >= 1 && v <= 5) counts[v]++;
-                          });
-                          const catCount = Object.values(counts).reduce((a, b) => a + b, 0);
-                          const avg = catCount > 0
-                            ? Object.entries(counts).reduce((s, [k, c]) => s + Number(k) * c, 0) / catCount
-                            : 0;
-                          const maxCount = Math.max(...Object.values(counts), 1);
+                        {maxAvg > 0 && (
+                          <div className="ws-present-rating-ranking">
+                            {ranked.map((item, i) => {
+                              const isWinner = item.avg === maxAvg;
+                              return (
+                                <div key={item.cat.id} className={`ws-present-rating-rank-row${isWinner ? ' ws-present-rating-rank-row--winner' : ''}`}>
+                                  <span className="ws-present-rating-rank-pos">
+                                    {isWinner ? '🏆' : `#${i + 1}`}
+                                  </span>
+                                  <span className="ws-present-rating-rank-label">{item.cat.label}</span>
+                                  <span className="ws-present-rating-rank-stars">
+                                    {'★'.repeat(Math.round(item.avg))}{'☆'.repeat(5 - Math.round(item.avg))}
+                                  </span>
+                                  <span className="ws-present-rating-rank-avg">{item.avg.toFixed(1)}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {catStats.map(({ cat, starCounts, catCount, avg }) => {
+                          const maxCount = Math.max(...Object.values(starCounts), 1);
                           return (
                             <div key={cat.id} className="ws-present-config-cat">
                               <div className="ws-present-config-cat-label">
@@ -546,10 +570,10 @@ const Present: React.FC = () => {
                                 {[1, 2, 3, 4, 5].map(star => (
                                   <div key={star} className="ws-present-scale-col">
                                     <div className="ws-present-scale-bar-wrap">
-                                      <div className="ws-present-scale-bar-fill" style={{ height: `${(counts[star] / maxCount) * 100}%` }} />
+                                      <div className="ws-present-scale-bar-fill" style={{ height: `${(starCounts[star] / maxCount) * 100}%` }} />
                                     </div>
                                     <div className="ws-present-scale-num" style={{ color: '#f59e0b' }}>{'★'.repeat(star)}</div>
-                                    <div className="ws-present-scale-count">{counts[star]}</div>
+                                    <div className="ws-present-scale-count">{starCounts[star]}</div>
                                   </div>
                                 ))}
                               </div>

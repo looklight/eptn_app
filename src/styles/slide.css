@@ -894,6 +894,21 @@
   margin-top: 4px;
 }
 
+.ws-recap-group-avg {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--ws-border);
+}
+
+.ws-recap-group-avg-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ws-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 10px;
+}
+
 /* ================================================
    RATING SUMMARY (pagina finale)
    ================================================ */

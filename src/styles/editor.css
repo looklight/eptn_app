@@ -323,6 +323,21 @@
   text-transform: uppercase; letter-spacing: 0.3px;
 }
 
+.ws-results-rating-section {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ws-results-rating-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ws-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
 .ws-response-slide-group { margin-bottom: 14px; }
 .ws-response-slide-group:last-child { margin-bottom: 0; }
 
@@ -336,20 +351,6 @@
 /* ================================================
    SLIDE EDITOR — redesign
    ================================================ */
-
-/* ---- Ghost button (back) ---- */
-
-.ws-btn-ghost {
-  background: transparent;
-  color: var(--ws-muted);
-  border: none;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 8px 12px;
-  text-transform: none;
-  letter-spacing: 0;
-}
-.ws-btn-ghost:hover { color: var(--ws-navy); background: var(--ws-bg); }
 
 /* ---- Editor top bar ---- */
 
@@ -767,181 +768,7 @@
 }
 .ws-add-cat-btn:hover { border-color: var(--ws-teal); color: var(--ws-teal); background: var(--ws-teal-light); }
 
-/* ================================================
-   SLIDES LIST — redesign
-   ================================================ */
-
-.ws-slides-list-view {}
-
-.ws-slides-empty {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--ws-muted);
-}
-
-.ws-slides-empty-icon {
-  font-size: 48px;
-  opacity: 0.2;
-  margin-bottom: 16px;
-  line-height: 1;
-}
-
-.ws-slides-empty p { font-size: 16px; margin: 0 0 6px; font-weight: 600; color: var(--ws-navy); }
-.ws-slides-empty .ws-slides-empty-sub { font-size: 14px; color: var(--ws-muted); font-weight: 400; }
-
-.ws-slides-list { display: flex; flex-direction: column; gap: 6px; }
-
-.ws-slide-card {
-  background: var(--ws-card);
-  border-radius: 8px;
-  padding: 14px 16px 14px 18px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  box-shadow: 0 1px 3px rgba(0,0,40,0.06);
-  border: 1px solid var(--ws-border);
-  border-left: 3px solid var(--ws-teal-border);
-  transition: box-shadow 0.15s, border-color 0.15s;
-  cursor: default;
-}
-.ws-slide-card:hover {
-  border-color: var(--ws-teal);
-  border-left-color: var(--ws-teal);
-  box-shadow: 0 3px 14px rgba(0,153,153,0.1);
-}
-
-.ws-slide-card-num {
-  width: 30px; height: 30px;
-  background: var(--ws-teal);
-  color: white;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 800;
-  flex-shrink: 0;
-}
-
-.ws-slide-card-body { flex: 1; min-width: 0; }
-.ws-slide-card-title { font-size: 14px; font-weight: 700; color: var(--ws-navy); margin-bottom: 6px; }
-
-.ws-slide-card-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-}
-
-/* Element type chips */
-
-.ws-type-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 20px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-
-.ws-type-chip--info        { background: var(--ws-info-light); color: var(--ws-info); }
-.ws-type-chip--question    { background: var(--ws-warning-light); color: var(--ws-warning); }
-.ws-type-chip--configurator { background: var(--ws-teal-light); color: var(--ws-teal); }
-.ws-type-chip--empty       { background: var(--ws-bg); color: var(--ws-muted); }
-
-/* PIN chips */
-
-.ws-pin-chip {
-  display: inline-flex;
-  align-items: center;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 20px;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-
-.ws-pin-chip--ok   { background: var(--ws-success-light); color: var(--ws-success); }
-.ws-pin-chip--warn { background: var(--ws-warning-light); color: var(--ws-warning); }
-.ws-pin-chip--last { background: var(--ws-bg); color: var(--ws-muted); }
-
-/* Slide card actions */
-
-.ws-slide-card-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.ws-slide-card-move { display: flex; gap: 4px; }
-
-.ws-move-btn {
-  width: 30px; height: 30px;
-  border: 1px solid var(--ws-border);
-  border-radius: 4px;
-  background: white;
-  font-size: 13px;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--ws-muted);
-  transition: all 0.15s;
-  font-family: inherit;
-  padding: 0;
-  text-transform: none;
-  letter-spacing: 0;
-}
-.ws-move-btn:hover:not(:disabled) { border-color: var(--ws-teal); color: var(--ws-teal); background: var(--ws-teal-light); }
-.ws-move-btn:disabled { opacity: 0.25; cursor: not-allowed; }
-
-.ws-slide-delete-btn {
-  width: 30px; height: 30px;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  font-size: 15px;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s;
-  font-family: inherit;
-  padding: 0;
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--ws-muted);
-}
-.ws-slide-delete-btn:hover { background: var(--ws-danger-light); border-color: var(--ws-danger-border); color: var(--ws-danger); }
-
-.ws-slides-list-footer { margin-top: 20px; }
-
-
-/* ================================================
-   ADMIN: checkbox
-   ================================================ */
-
-.ws-checkbox-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  color: var(--ws-navy);
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.ws-checkbox-row input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--ws-teal);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
 .ws-responses-partial { color: var(--ws-warning); font-weight: 600; }
-
-/* PIN chip — Moderated */
-.ws-pin-chip--moderated  { background: var(--ws-teal-light);  color: var(--ws-teal-dark); }
-.ws-pin-chip--autonomous { background: var(--ws-info-light);  color: var(--ws-info); }
 
 /* ---- Mode selector (slide editor) ---- */
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Check, ArrowRight, Eye } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { collection, getDocs, orderBy, query, setDoc, doc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, setDoc, doc, serverTimestamp, onSnapshot, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Slide, Answers, AnswerValue, ConfigAnswer, QuizElement, QuizAnswer, WorkshopResponse, CarouselElement, CarouselAnswer, RatingElement, RatingAnswer } from '../types';
 import { buildLeaderboard } from '../utils/leaderboard';
@@ -124,6 +124,69 @@ const AnswersList: React.FC<{ slide: Slide; answers: Answers }> = ({ slide, answ
   );
 };
 
+// ---- Rating group average (shown in recap/waiting when showSummary is enabled) ----
+
+type RatingStats = Record<string, Record<string, { sum: number; count: number }>>;
+
+const RatingGroupSection: React.FC<{ slide: Slide }> = ({ slide }) => {
+  const [stats, setStats] = useState<RatingStats>({});
+
+  useEffect(() => {
+    return onSnapshot(doc(db, 'workshop', 'ratingStats'), snap =>
+      setStats((snap.data() ?? {}) as RatingStats)
+    );
+  }, []);
+
+  const ratingEls = slide.elements.filter(
+    el => el.type === 'rating' && (el as RatingElement).showSummary
+  ) as RatingElement[];
+
+  if (ratingEls.length === 0) return null;
+
+  const hasData = ratingEls.some(el =>
+    el.categories.some(cat => (stats[el.id]?.[cat.id]?.count ?? 0) > 0)
+  );
+  if (!hasData) return null;
+
+  return (
+    <div className="ws-recap-group-avg">
+      <div className="ws-recap-group-avg-title">Media del gruppo</div>
+      {ratingEls.map(el => {
+        let totalSum = 0, totalCount = 0;
+        const rows = el.categories.map(cat => {
+          const s = stats[el.id]?.[cat.id];
+          const avg = s && s.count > 0 ? s.sum / s.count : null;
+          if (s) { totalSum += s.sum; totalCount += s.count; }
+          return (
+            <div key={cat.id} className="ws-summary-rating-row">
+              <span className="ws-summary-rating-cat">{cat.label}</span>
+              <span className="ws-summary-rating-group">
+                {avg !== null ? <strong>{avg.toFixed(1)} / 5</strong> : '—'}
+              </span>
+            </div>
+          );
+        });
+        const overallAvg = totalCount > 0 ? totalSum / totalCount : null;
+        return (
+          <div key={el.id} className="ws-summary-rating-card">
+            {el.title && (
+              <div className="ws-summary-rating-header">
+                <span className="ws-summary-rating-subtitle">{el.title}</span>
+              </div>
+            )}
+            {rows}
+            {overallAvg !== null && (
+              <div className="ws-summary-rating-footer">
+                Media totale: <strong>{overallAvg.toFixed(1)} / 5</strong>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 // ---- Recap screen ----
 
 const SlideRecap: React.FC<{ slide: Slide; answers: Answers; onContinue: () => void }> = ({ slide, answers, onContinue }) => (
@@ -135,6 +198,7 @@ const SlideRecap: React.FC<{ slide: Slide; answers: Answers; onContinue: () => v
         <p className="ws-recap-sub">{slide.title}</p>
       </div>
       <AnswersList slide={slide} answers={answers} />
+      <RatingGroupSection slide={slide} />
       <div className="ws-slide-nav" style={{ marginTop: 32 }}>
         <button className="ws-btn ws-btn-primary ws-btn-full" onClick={onContinue}>
           Continua <ArrowRight size={16} />
@@ -159,6 +223,7 @@ const WaitingScreen: React.FC<{ slide: Slide; answers: Answers }> = ({ slide, an
         <p className="ws-recap-sub">Il facilitatore avanzerà il gruppo alla slide successiva</p>
       </div>
       <AnswersList slide={slide} answers={answers} />
+      <RatingGroupSection slide={slide} />
     </div>
   </div>
 );
@@ -386,18 +451,39 @@ const SlidePage: React.FC = () => {
       await setDoc(doc(db, 'responses', getSessionId()), {
         name, answers, partial: false, submittedAt: serverTimestamp(),
       }, { merge: true });
-      sessionStorage.setItem('ws_summary_name', name || '');
-      sessionStorage.setItem('ws_summary_session_id', getSessionId());
-      sessionStorage.removeItem('ws_slide');
-      sessionStorage.removeItem('ws_answers');
-      sessionStorage.removeItem('ws_name');
-      sessionStorage.removeItem('ws_session_id');
-      navigate('/summary');
     } catch {
       submittingRef.current = false;
       setSubmitting(false);
       setSubmitError('Errore durante l\'invio. Riprova.');
+      return;
     }
+    // Aggiorna ratingStats best-effort: un eventuale fallimento non blocca la navigazione
+    // e non permette double-counting (submittingRef rimane true, navigate avviene subito)
+    const statsUpdate: Record<string, unknown> = {};
+    for (const slide of slides) {
+      for (const el of slide.elements) {
+        if (el.type !== 'rating') continue;
+        const ra = answers[el.id] as RatingAnswer | undefined;
+        if (!ra) continue;
+        for (const cat of (el as RatingElement).categories) {
+          const stars = ra[cat.id];
+          if (typeof stars === 'number' && stars > 0) {
+            statsUpdate[`${el.id}.${cat.id}.sum`] = increment(stars);
+            statsUpdate[`${el.id}.${cat.id}.count`] = increment(1);
+          }
+        }
+      }
+    }
+    if (Object.keys(statsUpdate).length > 0) {
+      setDoc(doc(db, 'workshop', 'ratingStats'), statsUpdate, { merge: true }).catch(console.error);
+    }
+    sessionStorage.setItem('ws_summary_name', name || '');
+    sessionStorage.setItem('ws_summary_session_id', getSessionId());
+    sessionStorage.removeItem('ws_slide');
+    sessionStorage.removeItem('ws_answers');
+    sessionStorage.removeItem('ws_name');
+    sessionStorage.removeItem('ws_session_id');
+    navigate('/summary');
   };
 
   if (loading) return <div className="ws-page-center"><p style={{ color: 'var(--ws-muted)' }}>Caricamento...</p></div>;

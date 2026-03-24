@@ -1,32 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, doc, onSnapshot, writeBatch } from 'firebase/firestore';
 import { db } from '../../firebase';
-import type { Slide, WorkshopResponse, AnswerValue, ConfigAnswer, CarouselAnswer, RatingAnswer } from '../../types';
-
-function formatAnswer(answer: AnswerValue, slide: Slide): React.ReactNode {
-  if (answer === undefined || answer === null) return '—';
-  if (typeof answer === 'boolean') return answer ? 'Sì' : 'No';
-  if (Array.isArray(answer)) return (answer as string[]).join(', ');
-  if (typeof answer === 'object') {
-    const config = answer as ConfigAnswer;
-    return (
-      <div>
-        {Object.entries(config).map(([catId, prodId]) => {
-          if (!prodId) return null;
-          for (const el of slide.elements) {
-            if (el.type !== 'configurator') continue;
-            const cat = el.categories.find(c => c.id === catId);
-            if (!cat) continue;
-            const prod = cat.products.find(p => p.id === prodId);
-            return <div key={catId}><span style={{ color: 'var(--ws-muted)' }}>{cat.label}:</span> {prod?.name ?? '—'}</div>;
-          }
-          return null;
-        })}
-      </div>
-    );
-  }
-  return String(answer);
-}
+import type { Slide, WorkshopResponse, RatingAnswer, RatingElement } from '../../types';
 
 const ResultsTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
   const [responses, setResponses] = useState<WorkshopResponse[]>([]);
@@ -46,6 +21,7 @@ const ResultsTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
     setResetting(true);
     const batch = writeBatch(db);
     responses.forEach(r => batch.delete(doc(db, 'responses', r.id)));
+    batch.delete(doc(db, 'workshop', 'ratingStats'));
     await batch.commit();
     setResetStep(false);
     setResetting(false);
@@ -54,6 +30,12 @@ const ResultsTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
   const sorted = [...slides].sort((a, b) => a.order - b.order);
   const complete = responses.filter(r => !r.partial);
   const inProgress = responses.filter(r => r.partial).length;
+
+  const ratingItems = sorted.flatMap(slide =>
+    slide.elements
+      .filter(el => el.type === 'rating')
+      .map(el => ({ slide, ratingEl: el as RatingElement }))
+  );
 
   return (
     <div>
@@ -77,56 +59,49 @@ const ResultsTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
 
       {complete.length === 0 ? (
         <p className="ws-empty">Nessuna risposta completa ancora.</p>
-      ) : complete.map(r => (
-        <div className="ws-response-card" key={r.id}>
-          <div className="ws-response-name">{r.name}</div>
-          {sorted.map(slide => {
-            const interactive = slide.elements.filter(el => el.type !== 'info');
-            const hasAnswers = interactive.some(el => r.answers?.[el.id] !== undefined);
-            if (!hasAnswers) return null;
+      ) : ratingItems.length === 0 ? (
+        <p className="ws-empty">Nessun elemento di valutazione nelle slide.</p>
+      ) : (
+        <div className="ws-results-rating-section">
+          {ratingItems.map(({ slide, ratingEl }) => {
+            const allScores = ratingEl.categories.flatMap(cat =>
+              complete
+                .map(r => (r.answers?.[ratingEl.id] as RatingAnswer)?.[cat.id])
+                .filter((v): v is number => typeof v === 'number' && v > 0)
+            );
+            const overallAvg = allScores.length > 0
+              ? allScores.reduce((a, b) => a + b, 0) / allScores.length
+              : null;
             return (
-              <div key={slide.id} className="ws-response-slide-group">
-                <div className="ws-response-slide-title">{slide.title}</div>
-                {interactive.map(el => {
-                  const answer = r.answers?.[el.id];
-                  if (answer === undefined) return null;
-                  if (el.type === 'carousel') {
-                    const itemId = answer as CarouselAnswer;
-                    if (!itemId) return null;
-                    const item = el.items.find(it => it.id === itemId);
-                    return (
-                      <div className="ws-response-item" key={el.id}>
-                        <span className="ws-response-question">{el.title || 'Carosello'}</span>
-                        <span className="ws-response-answer">{item?.title ?? '—'}</span>
-                      </div>
-                    );
-                  }
-                  if (el.type === 'rating') {
-                    const ra = answer as RatingAnswer;
-                    return (
-                      <div key={el.id}>
-                        {el.categories.map(cat => (
-                          <div className="ws-response-item" key={cat.id}>
-                            <span className="ws-response-question">{cat.label}</span>
-                            <span className="ws-response-answer">{'★'.repeat(ra[cat.id] ?? 0)}{'☆'.repeat(5 - (ra[cat.id] ?? 0))} · {ra[cat.id] ?? 0}/5</span>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  }
-                  const label = el.type === 'question' ? el.text : el.type === 'configurator' ? el.title : '';
+              <div key={ratingEl.id} className="ws-summary-rating-card">
+                <div className="ws-summary-rating-header">
+                  <span className="ws-summary-rating-slide">{slide.title}</span>
+                  {ratingEl.title && <span className="ws-summary-rating-subtitle">{ratingEl.title}</span>}
+                </div>
+                {ratingEl.categories.map(cat => {
+                  const scores = complete
+                    .map(r => (r.answers?.[ratingEl.id] as RatingAnswer)?.[cat.id])
+                    .filter((v): v is number => typeof v === 'number' && v > 0);
+                  const avg = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
                   return (
-                    <div className="ws-response-item" key={el.id}>
-                      <span className="ws-response-question">{label}</span>
-                      <span className="ws-response-answer">{formatAnswer(answer, slide)}</span>
+                    <div key={cat.id} className="ws-summary-rating-row">
+                      <span className="ws-summary-rating-cat">{cat.label}</span>
+                      <span className="ws-summary-rating-group">
+                        {avg !== null ? <strong>{avg.toFixed(1)} / 5</strong> : '—'}
+                      </span>
                     </div>
                   );
                 })}
+                {overallAvg !== null && (
+                  <div className="ws-summary-rating-footer">
+                    Media totale: <strong>{overallAvg.toFixed(1)} / 5</strong>
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
-      ))}
+      )}
     </div>
   );
 };
