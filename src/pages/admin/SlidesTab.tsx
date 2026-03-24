@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { ref as storageRef, deleteObject } from 'firebase/storage';
 import { db, storage } from '../../firebase';
-import type { Slide, SlideElement, QuizElement, CarouselElement, RatingElement } from '../../types';
+import type { Slide, SlideElement, QuizElement, CarouselElement, RatingElement, ResultsElement } from '../../types';
 import { getSlideMode } from '../../types';
 import {
   FileText, HelpCircle, SlidersHorizontal, ChevronUp, ChevronDown,
-  Check, Layers, Square, Trophy, GalleryHorizontal, Star,
+  Check, Layers, Square, Trophy, GalleryHorizontal, Star, BarChart2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import InfoEditor from './editors/InfoEditor';
@@ -15,6 +15,7 @@ import ConfiguratorEditor from './editors/ConfiguratorEditor';
 import QuizEditor from './editors/QuizEditor';
 import CarouselEditor from './editors/CarouselEditor';
 import RatingEditor from './editors/RatingEditor';
+import ResultsEditor from './editors/ResultsEditor';
 import ModeDropdown from './ModeDropdown';
 import SlideImageUploader from './SlideImageUploader';
 import SlideNavPanel from './SlideNavPanel';
@@ -29,6 +30,7 @@ const typeConfig: Record<string, { label: string; color: string; Icon: LucideIco
   quiz:         { label: 'Quiz',             color: '#e11d48', Icon: Trophy },
   carousel:     { label: 'Carosello',        color: '#7c3aed', Icon: GalleryHorizontal },
   rating:       { label: 'Valutazione ★',   color: '#d97706', Icon: Star },
+  results:      { label: 'Risultati',        color: '#10b981', Icon: BarChart2 },
 };
 
 const ElWrapper: React.FC<{
@@ -55,6 +57,7 @@ const ElWrapper: React.FC<{
       {element.type === 'quiz' && <QuizEditor element={element as QuizElement} onChange={el => onChange(el)} />}
       {element.type === 'carousel' && <CarouselEditor element={element as CarouselElement} onChange={el => onChange(el)} />}
       {element.type === 'rating' && <RatingEditor element={element as RatingElement} onChange={el => onChange(el)} />}
+      {element.type === 'results' && <ResultsEditor element={element as ResultsElement} onChange={el => onChange(el)} />}
     </div>
   );
 };
@@ -130,6 +133,7 @@ const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
     else if (type === 'quiz') el = { id: uid(), type: 'quiz', text: '', options: ['', '', '', ''], correctAnswer: 0 } as QuizElement;
     else if (type === 'carousel') el = { id: uid(), type: 'carousel', title: '', items: [] } as CarouselElement;
     else if (type === 'rating') el = { id: uid(), type: 'rating', title: '', categories: [{ id: uid(), label: '' }, { id: uid(), label: '' }] } as RatingElement;
+    else if (type === 'results') el = { id: uid(), type: 'results', sourceElementId: '', sourceSlideId: '' } as ResultsElement;
     else el = { id: uid(), type: 'configurator', title: '', categories: [] };
     setEditing({ ...editing, elements: [...editing.elements, el] });
   };
@@ -298,6 +302,10 @@ const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
                     <button className="ws-add-el-btn ws-add-el-btn--rating" onClick={() => addElement('rating')}>
                       <span className="ws-add-el-icon"><Star size={20} /></span>
                       <span className="ws-add-el-name">Valutazione</span>
+                    </button>
+                    <button className="ws-add-el-btn ws-add-el-btn--results" onClick={() => addElement('results')}>
+                      <span className="ws-add-el-icon"><BarChart2 size={20} /></span>
+                      <span className="ws-add-el-name">Risultati</span>
                     </button>
                   </div>
                 </div>

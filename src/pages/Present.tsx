@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Users, Unlock, KeyRound, CheckCircle2, QrCod
 import { QRCodeSVG } from 'qrcode.react';
 import { collection, onSnapshot, query, orderBy, getDocs, doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import type { Slide, WorkshopResponse, ConfigAnswer, QuizAnswer, SlideMode, InfoElement, CarouselElement, RatingAnswer, RatingElement } from '../types';
+import type { Slide, WorkshopResponse, ConfigAnswer, QuizAnswer, SlideMode, InfoElement, CarouselElement, RatingAnswer, RatingElement, ResultsElement } from '../types';
 import { getSlideMode } from '../types';
 import InfoEl from '../components/elements/InfoEl';
 
@@ -66,7 +66,7 @@ const Present: React.FC = () => {
   const mode = slide ? getSlideMode(slide) : 'moderated';
 
   const interactive = useMemo(
-    () => slide ? slide.elements.filter(el => el.type !== 'info') : [],
+    () => slide ? slide.elements.filter(el => el.type !== 'info' && el.type !== 'results') : [],
     [slide]
   );
 
@@ -250,14 +250,14 @@ const Present: React.FC = () => {
                   <img src={slide.imageUrl} alt="" className="ws-present-slide-image" />
                 </div>
               )}
-              {interactive.length === 0 ? (
+              {interactive.length === 0 && (
                 <div className="ws-present-info-els">
                   {slide.elements.filter(el => el.type === 'info').map(el => (
                     <InfoEl key={el.id} element={el as InfoElement} />
                   ))}
                 </div>
-              ) : (
-                interactive.map(el => {
+              )}
+              {interactive.length > 0 && interactive.map(el => {
                   const answered = answeredByElementId.get(el.id) ?? [];
                   const count = answered.length;
 
@@ -558,8 +558,115 @@ const Present: React.FC = () => {
                   }
 
                   return null;
-                })
-              )}
+                })}
+
+              {/* Results elements */}
+              {slide.elements.filter(el => el.type === 'results').map(el => {
+                const resultsEl = el as ResultsElement;
+                const sourceSlide = sorted.find(s => s.id === resultsEl.sourceSlideId);
+                const sourceEl = sourceSlide?.elements.find(e => e.id === resultsEl.sourceElementId);
+
+                if (!sourceEl) return (
+                  <div key={el.id} className="ws-present-el">
+                    <div className="ws-present-no-data">Elemento risultati non configurato</div>
+                  </div>
+                );
+
+                const answered = responses.filter(r => r.answers?.[sourceEl.id] !== undefined);
+                const count = answered.length;
+
+                if (count === 0) return (
+                  <div key={el.id} className="ws-present-el">
+                    <div className="ws-present-el-label">
+                      {sourceEl.type === 'rating' ? (sourceEl as RatingElement).title || 'Valutazione' : (sourceEl as { text: string }).text || 'Quiz'}
+                    </div>
+                    <div className="ws-present-no-data">Nessuna risposta ancora</div>
+                  </div>
+                );
+
+                /* Rating results */
+                if (sourceEl.type === 'rating') {
+                  const rating = sourceEl as RatingElement;
+                  const catAvgs = rating.categories.map(cat => {
+                    let sum = 0, n = 0;
+                    answered.forEach(r => {
+                      const v = (r.answers[sourceEl.id] as RatingAnswer)?.[cat.id];
+                      if (v && v >= 1 && v <= 5) { sum += v; n++; }
+                    });
+                    return { cat, avg: n > 0 ? sum / n : 0 };
+                  });
+                  const ranked = [...catAvgs].filter(s => s.avg > 0).sort((a, b) => b.avg - a.avg);
+                  const maxAvg = ranked[0]?.avg ?? 0;
+                  return (
+                    <div key={el.id} className="ws-present-el">
+                      <div className="ws-present-el-label">{rating.title || 'Valutazione'}</div>
+                      <div className="ws-present-el-meta">{count} risposte</div>
+                      {maxAvg > 0 && (
+                        <div className="ws-present-rating-ranking">
+                          {ranked.map((item, i) => {
+                            const isWinner = item.avg === maxAvg;
+                            return (
+                              <div key={item.cat.id} className={`ws-present-rating-rank-row${isWinner ? ' ws-present-rating-rank-row--winner' : ''}`}>
+                                <span className="ws-present-rating-rank-pos">
+                                  {isWinner ? '🏆' : `#${i + 1}`}
+                                </span>
+                                <span className="ws-present-rating-rank-label">{item.cat.label}</span>
+                                <span className="ws-present-rating-rank-stars">
+                                  {'★'.repeat(Math.round(item.avg))}{'☆'.repeat(5 - Math.round(item.avg))}
+                                </span>
+                                <span className="ws-present-rating-rank-avg">{item.avg.toFixed(1)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                /* Quiz results */
+                if (sourceEl.type === 'quiz') {
+                  const quizEl = sourceEl as { type: 'quiz'; text: string; options: string[]; correctAnswer: number };
+                  const counts = Array(quizEl.options.length).fill(0) as number[];
+                  let correctCount = 0;
+                  answered.forEach(r => {
+                    const qa = r.answers[sourceEl.id] as QuizAnswer;
+                    if (qa && typeof qa === 'object' && 'responseTimeMs' in qa) {
+                      if (qa.answer >= 0 && qa.answer < counts.length) counts[qa.answer]++;
+                      if (qa.answer === quizEl.correctAnswer) correctCount++;
+                    }
+                  });
+                  const maxCount = Math.max(...counts, 1);
+                  return (
+                    <div key={el.id} className="ws-present-el">
+                      <div className="ws-present-el-label">{quizEl.text}</div>
+                      <div className="ws-present-el-meta">
+                        {count} risposte · {correctCount} corrette ({Math.round((correctCount / count) * 100)}%)
+                      </div>
+                      <div className="ws-present-bars">
+                        {quizEl.options.map((opt, i) => (
+                          <div key={i} className="ws-present-bar-row">
+                            <span className="ws-present-bar-label">
+                              {i === quizEl.correctAnswer ? '✓ ' : ''}{opt}
+                            </span>
+                            <div className="ws-present-bar-track">
+                              <div
+                                className={`ws-present-bar-fill${i === quizEl.correctAnswer ? ' ws-present-bar-fill--correct' : ''}`}
+                                style={{ width: `${(counts[i] / maxCount) * 100}%` }}
+                              />
+                            </div>
+                            <span className="ws-present-bar-val">
+                              {counts[i]} <span className="ws-present-bar-pct">({Math.round((counts[i] / count) * 100)}%)</span>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return null;
+              })}
             </div>
 
 

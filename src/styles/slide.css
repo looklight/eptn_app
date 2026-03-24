@@ -1057,6 +1057,115 @@
 }
 
 /* ================================================
+   RESULTS ELEMENT (slide risultati — vista utente)
+   ================================================ */
+
+.ws-results-el {
+  background: var(--ws-card-bg, #fff);
+  border: 1px solid var(--ws-border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.ws-results-el-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ws-text);
+  margin-bottom: 12px;
+}
+
+.ws-results-no-data {
+  color: var(--ws-muted);
+  font-size: 14px;
+}
+
+.ws-results-ranking {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ws-results-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--ws-bg, #f9fafb);
+}
+
+.ws-results-rank-row--winner {
+  background: #fef9c3;
+  font-weight: 600;
+}
+
+.ws-results-rank-pos {
+  font-size: 14px;
+  min-width: 28px;
+  text-align: center;
+}
+
+.ws-results-rank-label {
+  flex: 1;
+  font-size: 14px;
+}
+
+.ws-results-rank-stars {
+  font-size: 15px;
+  letter-spacing: -1px;
+}
+
+.ws-results-rank-avg {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ws-muted);
+  min-width: 28px;
+  text-align: right;
+}
+
+/* Quiz results */
+.ws-results-quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ws-results-quiz-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--ws-bg, #f9fafb);
+  font-size: 14px;
+  color: var(--ws-text);
+}
+
+.ws-results-quiz-opt--correct {
+  background: #dcfce7;
+  color: #15803d;
+  font-weight: 600;
+}
+
+.ws-results-quiz-opt--wrong {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.ws-results-quiz-opt-marker {
+  min-width: 16px;
+  font-size: 13px;
+}
+
+.ws-results-quiz-opt-mine {
+  font-size: 11px;
+  font-style: italic;
+  margin-left: auto;
+  opacity: 0.7;
+}
+
+/* ================================================
    RESPONSIVE
    ================================================ */
 

@@ -77,7 +77,14 @@ export type RatingElement = {
   showSummary?: boolean; // mostra nel riepilogo finale per il confronto
 };
 
-export type SlideElement = InfoElement | QuestionElement | ConfiguratorElement | QuizElement | CarouselElement | RatingElement;
+export type ResultsElement = {
+  id: string;
+  type: 'results';
+  sourceElementId: string; // ID dell'elemento rating/quiz di riferimento
+  sourceSlideId: string;   // ID della slide che contiene quell'elemento
+};
+
+export type SlideElement = InfoElement | QuestionElement | ConfiguratorElement | QuizElement | CarouselElement | RatingElement | ResultsElement;
 
 export type SlideMode = 'moderated' | 'pin' | 'autonomous';
 
