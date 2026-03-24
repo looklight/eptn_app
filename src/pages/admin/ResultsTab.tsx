@@ -87,7 +87,14 @@ const ResultsTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
                     <div key={cat.id} className="ws-summary-rating-row">
                       <span className="ws-summary-rating-cat">{cat.label}</span>
                       <span className="ws-summary-rating-group">
-                        {avg !== null ? <strong>{avg.toFixed(1)} / 5</strong> : '—'}
+                        {avg !== null ? (
+                          <>
+                            <span style={{ color: '#f59e0b', letterSpacing: '-1px' }}>
+                              {'★'.repeat(Math.round(avg))}{'☆'.repeat(5 - Math.round(avg))}
+                            </span>
+                            {' '}<strong>{avg.toFixed(1)}</strong>
+                          </>
+                        ) : '—'}
                       </span>
                     </div>
                   );
