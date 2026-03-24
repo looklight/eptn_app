@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Users, Unlock, KeyRound, CheckCircle2, QrCod
 import { QRCodeSVG } from 'qrcode.react';
 import { collection, onSnapshot, query, orderBy, getDocs, doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import type { Slide, WorkshopResponse, ConfigAnswer, QuizAnswer, SlideMode, InfoElement, CarouselElement, RatingAnswer, RatingElement, ResultsElement } from '../types';
+import type { Slide, WorkshopResponse, ConfigAnswer, QuizAnswer, SlideMode, InfoElement, CarouselElement, RatingAnswer, RatingElement, ResultsElement, QuizElement } from '../types';
 import { getSlideMode } from '../types';
 import InfoEl from '../components/elements/InfoEl';
 
@@ -626,7 +626,7 @@ const Present: React.FC = () => {
 
                 /* Quiz results */
                 if (sourceEl.type === 'quiz') {
-                  const quizEl = sourceEl as { type: 'quiz'; text: string; options: string[]; correctAnswer: number };
+                  const quizEl = sourceEl as QuizElement;
                   const counts = Array(quizEl.options.length).fill(0) as number[];
                   let correctCount = 0;
                   answered.forEach(r => {

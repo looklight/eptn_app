@@ -265,7 +265,11 @@ const ResultsElView: React.FC<{ element: ResultsElement; slides: Slide[]; answer
   const sourceSlide = slides.find(s => s.id === element.sourceSlideId);
   const sourceEl = sourceSlide?.elements.find(e => e.id === element.sourceElementId);
 
-  if (!sourceEl) return null;
+  if (!sourceEl) return (
+    <div className="ws-results-el">
+      <div className="ws-results-no-data">Elemento non configurato</div>
+    </div>
+  );
 
   if (sourceEl.type === 'rating') return <RatingResultsEl sourceElement={sourceEl as RatingElement} />;
   if (sourceEl.type === 'quiz') return (
