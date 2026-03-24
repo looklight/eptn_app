@@ -319,7 +319,7 @@ const ResultsElView: React.FC<{ element: ResultsElement; slides: Slide[]; answer
                   const isMine = userAnswer?.answer === i;
                   return (
                     <div
-                      key={i}
+                      key={`${quiz.id}-${i}`}
                       className={`ws-results-quiz-opt${isCorrect ? ' ws-results-quiz-opt--correct' : ''}${isMine && !isCorrect ? ' ws-results-quiz-opt--wrong' : ''}`}
                     >
                       <span className="ws-results-quiz-opt-marker">{isCorrect ? '✓' : isMine ? '✗' : ''}</span>

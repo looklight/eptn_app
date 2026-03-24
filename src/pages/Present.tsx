@@ -624,7 +624,7 @@ const Present: React.FC = () => {
 
                       if (count === 0) return (
                         <div key={sourceEl.id} className="ws-present-results-card">
-                          <div className="ws-present-results-card-header" style={{ cursor: 'default' }}>
+                          <div className="ws-present-results-card-header">
                             {rankIcon !== null && (
                               <span className={`ws-present-results-rank${rank >= 3 ? ' ws-present-results-rank--num' : ''}`}>{rankIcon}</span>
                             )}
@@ -643,7 +643,7 @@ const Present: React.FC = () => {
                         const isOpen = expandedResults.has(rating.id);
                         return (
                           <div key={rating.id} className="ws-present-results-card">
-                            <div className="ws-present-results-card-header" onClick={() => toggleResult(rating.id)}>
+                            <div className="ws-present-results-card-header ws-present-results-card-header--clickable" onClick={() => toggleResult(rating.id)}>
                               {rankIcon !== null && (
                                 <span className={`ws-present-results-rank${rank >= 3 ? ' ws-present-results-rank--num' : ''}`}>{rankIcon}</span>
                               )}
@@ -703,7 +703,7 @@ const Present: React.FC = () => {
                         const maxCount = Math.max(...counts, 1);
                         return (
                           <div key={quizEl.id} className="ws-present-results-card">
-                            <div className="ws-present-results-card-header" style={{ cursor: 'default' }}>
+                            <div className="ws-present-results-card-header">
                               <div className="ws-present-results-card-main">
                                 <div className="ws-present-results-card-title">{quizEl.text}</div>
                                 <div className="ws-present-results-card-meta">
