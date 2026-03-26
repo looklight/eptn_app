@@ -72,14 +72,12 @@ const WorkshopPanel: React.FC = () => {
             ? <><CheckCircle2 size={12} /> Attivo</>
             : <><Circle size={12} /> Inattivo</>}
         </span>
-      </div>
-
-      <div className="ws-nav-workshop-qr">
-        <QRCodeCanvas ref={qrRef} value={url} size={96} marginSize={1} />
         <button className="ws-btn ws-btn-secondary ws-btn-sm ws-nav-workshop-dl" onClick={downloadQR}>
-          <Download size={12} /> Scarica QR
+          <Download size={12} />
         </button>
       </div>
+
+      <QRCodeCanvas ref={qrRef} value={url} size={96} marginSize={1} style={{ display: 'none' }} />
     </div>
   );
 };
