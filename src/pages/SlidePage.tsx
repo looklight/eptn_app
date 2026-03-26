@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Check, ArrowRight, Eye, ChevronDown } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { collection, getDocs, orderBy, query, setDoc, updateDoc, doc, serverTimestamp, onSnapshot, increment } from 'firebase/firestore';
+import { collection, getDocs, getDoc, orderBy, query, setDoc, updateDoc, doc, serverTimestamp, onSnapshot, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Slide, Answers, AnswerValue, ConfigAnswer, QuizElement, QuizAnswer, WorkshopResponse, CarouselElement, CarouselAnswer, RatingElement, RatingAnswer, ResultsElement, RatingStats } from '../types';
 import { buildLeaderboard } from '../utils/leaderboard';
@@ -499,6 +499,19 @@ const SlidePage: React.FC = () => {
       try { setAnswers(JSON.parse(sessionStorage.getItem('ws_answers') || '{}')); } catch { /* */ }
     }
     const load = async () => {
+      // Se la sessione non esiste più in Firestore (es. admin ha fatto reset), pulisce
+      // la sessionStorage e torna alla Landing, evitando risposte pre-compilate stantie.
+      if (!isPreview) {
+        const sessionId = sessionStorage.getItem('ws_session_id');
+        if (sessionId) {
+          const sessionDoc = await getDoc(doc(db, 'responses', sessionId));
+          if (!sessionDoc.exists()) {
+            sessionStorage.clear();
+            navigate('/');
+            return;
+          }
+        }
+      }
       const q = query(collection(db, 'slides'), orderBy('order'));
       const snap = await getDocs(q);
       const loaded = snap.docs.map(d => ({ id: d.id, ...d.data() } as Slide));
