@@ -554,40 +554,34 @@ const SlidePage: React.FC = () => {
     if (isPreview) return;
     const slide = slidesRef.current[slideIdx];
     if (!slide) return;
+    // updateDoc usa dot-notation come percorsi annidati → struttura corretta in Firestore.
+    // setDoc con merge:true li tratta come nomi letterali, rendendo i dati illeggibili.
+    // Costruiamo entrambe le strutture in un solo passaggio: statsUpdate per updateDoc,
+    // initial per il fallback setDoc (prima scrittura, documento non ancora esistente).
     const statsUpdate: Record<string, unknown> = {};
+    const initial: Record<string, Record<string, { sum: number; count: number }>> = {};
     for (const el of slide.elements) {
       if (el.type !== 'rating') continue;
       const ra = currentAnswers[el.id] as RatingAnswer | undefined;
       if (!ra) continue;
+      initial[el.id] = {};
       for (const cat of (el as RatingElement).categories) {
         const stars = ra[cat.id];
         if (typeof stars === 'number' && stars > 0) {
           statsUpdate[`${el.id}.${cat.id}.sum`] = increment(stars);
           statsUpdate[`${el.id}.${cat.id}.count`] = increment(1);
+          initial[el.id][cat.id] = { sum: stars, count: 1 };
         }
       }
     }
     if (Object.keys(statsUpdate).length > 0) {
       const statsRef = doc(db, 'workshop', 'ratingStats');
-      // updateDoc interpreta il dot-notation come percorsi annidati (es. "elId.catId.sum" → oggetto annidato).
-      // setDoc con merge:true li tratta come nomi letterali con il punto, rendendo i dati illeggibili.
-      updateDoc(statsRef, statsUpdate).catch(() => {
-        // Prima scrittura: il documento non esiste ancora. Costruiamo la struttura annidata
-        // manualmente senza dot-notation per setDoc.
-        const initial: Record<string, Record<string, { sum: number; count: number }>> = {};
-        for (const iEl of slide.elements) {
-          if (iEl.type !== 'rating') continue;
-          const iRa = currentAnswers[iEl.id] as RatingAnswer | undefined;
-          if (!iRa) continue;
-          initial[iEl.id] = {};
-          for (const iCat of (iEl as RatingElement).categories) {
-            const iStars = iRa[iCat.id];
-            if (typeof iStars === 'number' && iStars > 0) {
-              initial[iEl.id][iCat.id] = { sum: iStars, count: 1 };
-            }
-          }
+      updateDoc(statsRef, statsUpdate).catch((e: { code?: string }) => {
+        if (e.code === 'not-found') {
+          setDoc(statsRef, initial, { merge: true }).catch(console.error);
+        } else {
+          console.error(e);
         }
-        setDoc(statsRef, initial, { merge: true }).catch(console.error);
       });
     }
   };
