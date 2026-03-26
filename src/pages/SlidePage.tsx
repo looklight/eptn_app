@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Check, ArrowRight, Eye, ChevronDown } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { collection, getDocs, orderBy, query, setDoc, doc, serverTimestamp, onSnapshot, increment } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, setDoc, updateDoc, doc, serverTimestamp, onSnapshot, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { Slide, Answers, AnswerValue, ConfigAnswer, QuizElement, QuizAnswer, WorkshopResponse, CarouselElement, CarouselAnswer, RatingElement, RatingAnswer, ResultsElement, RatingStats } from '../types';
 import { buildLeaderboard } from '../utils/leaderboard';
@@ -568,7 +568,27 @@ const SlidePage: React.FC = () => {
       }
     }
     if (Object.keys(statsUpdate).length > 0) {
-      setDoc(doc(db, 'workshop', 'ratingStats'), statsUpdate, { merge: true }).catch(console.error);
+      const statsRef = doc(db, 'workshop', 'ratingStats');
+      // updateDoc interpreta il dot-notation come percorsi annidati (es. "elId.catId.sum" → oggetto annidato).
+      // setDoc con merge:true li tratta come nomi letterali con il punto, rendendo i dati illeggibili.
+      updateDoc(statsRef, statsUpdate).catch(() => {
+        // Prima scrittura: il documento non esiste ancora. Costruiamo la struttura annidata
+        // manualmente senza dot-notation per setDoc.
+        const initial: Record<string, Record<string, { sum: number; count: number }>> = {};
+        for (const iEl of slide.elements) {
+          if (iEl.type !== 'rating') continue;
+          const iRa = currentAnswers[iEl.id] as RatingAnswer | undefined;
+          if (!iRa) continue;
+          initial[iEl.id] = {};
+          for (const iCat of (iEl as RatingElement).categories) {
+            const iStars = iRa[iCat.id];
+            if (typeof iStars === 'number' && iStars > 0) {
+              initial[iEl.id][iCat.id] = { sum: iStars, count: 1 };
+            }
+          }
+        }
+        setDoc(statsRef, initial, { merge: true }).catch(console.error);
+      });
     }
   };
 
