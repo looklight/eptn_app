@@ -153,6 +153,62 @@
   color: var(--ws-danger);
 }
 
+/* Workshop panel (top of nav) */
+
+.ws-nav-workshop {
+  padding: 4px 10px 0;
+}
+
+.ws-nav-workshop-name-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.ws-nav-workshop-name-input {
+  font-size: 12px;
+  padding: 5px 8px;
+  min-width: 0;
+  margin-bottom: 0 !important;
+}
+
+.ws-nav-workshop-save-btn {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  font-size: 11px;
+}
+
+.ws-nav-workshop-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ws-nav-workshop-toggle-label {
+  font-size: 12px;
+  color: var(--ws-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ws-nav-workshop-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding-bottom: 14px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--ws-border);
+}
+
+.ws-nav-workshop-dl {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
 /* Add slide button */
 
 .ws-slide-nav-add {

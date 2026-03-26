@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Slide } from '../../types';
 import { ChevronUp, ChevronDown, Trash2, Plus } from 'lucide-react';
+import WorkshopPanel from './WorkshopPanel';
 
 const SlideNavPanel: React.FC<{
   slides: Slide[];
@@ -12,6 +13,8 @@ const SlideNavPanel: React.FC<{
   onMove: (slide: Slide, dir: 'up' | 'down') => void;
 }> = ({ slides, editingId, saving, onSelect, onAdd, onDelete, onMove }) => (
   <div className="ws-slide-nav-panel">
+    <WorkshopPanel />
+
     <span className="ws-slide-nav-label">
       Slide{slides.length > 0 ? ` (${slides.length})` : ''}
     </span>

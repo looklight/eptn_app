@@ -3,7 +3,6 @@ import { Play, Eye } from 'lucide-react';
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { db } from '../../firebase';
 import type { Slide } from '../../types';
-import WorkshopTab from './WorkshopTab';
 import SlidesTab from './SlidesTab';
 import ResultsTab from './ResultsTab';
 import { useTopBarSlot } from '../../components/TopBarContext';
@@ -12,7 +11,7 @@ const AdminPage: React.FC = () => {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('ep_admin_auth') === '1');
   const [pw, setPw] = useState('');
   const [pwError, setPwError] = useState('');
-  const [tab, setTab] = useState<'workshop' | 'slides' | 'results'>('workshop');
+  const [tab, setTab] = useState<'slides' | 'results'>('slides');
   const [slides, setSlides] = useState<Slide[]>([]);
   const setSlot = useTopBarSlot();
 
@@ -48,9 +47,6 @@ const AdminPage: React.FC = () => {
       <>
         <span className="topbar-admin-sep" />
         <div className="topbar-admin-tabs">
-          <button className={`topbar-admin-tab${tab === 'workshop' ? ' active' : ''}`} onClick={() => setTab('workshop')}>
-            Workshop
-          </button>
           <button className={`topbar-admin-tab${tab === 'slides' ? ' active' : ''}`} onClick={() => setTab('slides')}>
             Slide ({slides.length})
           </button>
@@ -98,7 +94,6 @@ const AdminPage: React.FC = () => {
   return (
     <div className="ws-admin-page">
       <div className="ws-tab-content">
-        {tab === 'workshop' && <WorkshopTab />}
         {tab === 'slides' && <SlidesTab slides={slides} />}
         {tab === 'results' && <ResultsTab slides={slides} />}
       </div>
