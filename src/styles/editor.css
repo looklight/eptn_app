@@ -412,6 +412,30 @@
   background: white;
 }
 
+.ws-edit-section-label--toggle {
+  width: 100%;
+  cursor: pointer;
+  background: white;
+  border: none;
+  font-family: inherit;
+  text-align: left;
+  text-transform: none;
+  transition: background 0.15s;
+}
+
+.ws-edit-section-label--toggle:hover {
+  background: var(--ws-bg);
+}
+
+.ws-section-chevron {
+  transition: transform 0.2s;
+  transform: rotate(-90deg);
+}
+
+.ws-section-chevron.open {
+  transform: rotate(0deg);
+}
+
 .ws-edit-section-count {
   background: var(--ws-teal);
   color: white;

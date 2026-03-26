@@ -67,6 +67,7 @@ const ElWrapper: React.FC<{
 const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
   const [editing, setEditing] = useState<Slide | null>(null);
   const [saving, setSaving] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(true);
 
   const sorted = [...slides].sort((a, b) => a.order - b.order);
   const isLast = (s: Slide) => sorted[sorted.length - 1]?.id === s.id;
@@ -194,7 +195,11 @@ const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
             <div className="ws-slide-edit-body">
               {/* Slide metadata */}
               <div className="ws-edit-section">
-                <div className="ws-edit-settings">
+                <button className="ws-edit-section-label ws-edit-section-label--toggle" onClick={() => setSettingsOpen(o => !o)}>
+                  Impostazioni
+                  <ChevronDown size={13} className={`ws-section-chevron${settingsOpen ? ' open' : ''}`} style={{ marginLeft: 'auto' }} />
+                </button>
+                {settingsOpen && <div className="ws-edit-settings">
                   <div className="ws-edit-settings-title">
                     <label className="ws-label">Titolo slide</label>
                     <input className="ws-field" type="text" value={editing.title} placeholder="Es. Benvenuto, Modulo 1..."
@@ -252,7 +257,7 @@ const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
                       )}
                     </>
                   )}
-                </div>
+                </div>}
               </div>
 
               {/* Elements */}

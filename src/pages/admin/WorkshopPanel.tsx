@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { QRCodeCanvas } from 'qrcode.react';
-import { Check, Download, CheckCircle2, Circle } from 'lucide-react';
+import { Check, Download, QrCode, CheckCircle2, Circle } from 'lucide-react';
 import { db } from '../../firebase';
 import type { Workshop } from '../../types';
 
@@ -72,8 +72,8 @@ const WorkshopPanel: React.FC = () => {
             ? <><CheckCircle2 size={12} /> Attivo</>
             : <><Circle size={12} /> Inattivo</>}
         </span>
-        <button className="ws-btn ws-btn-secondary ws-btn-sm ws-nav-workshop-dl" onClick={downloadQR}>
-          <Download size={12} />
+        <button className="ws-btn ws-btn-secondary ws-btn-sm ws-nav-workshop-dl" onClick={downloadQR} title="Scarica QR code">
+          <QrCode size={12} /><Download size={12} />
         </button>
       </div>
 
