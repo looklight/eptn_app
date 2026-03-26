@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, writeBatch, deleteField } from 'firebase/firestore';
 import { ref as storageRef, deleteObject } from 'firebase/storage';
 import { db, storage } from '../../firebase';
 import type { Slide, SlideElement, QuizElement, CarouselElement, RatingElement, ResultsElement } from '../../types';
@@ -75,7 +75,10 @@ const SlidesTab: React.FC<{ slides: Slide[] }> = ({ slides }) => {
     if (!editing) return;
     setSaving(true);
     const { id, order: _order, ...data } = editing; // order è gestito solo da moveSlide
-    await updateDoc(doc(db, 'slides', id), data as Record<string, unknown>);
+    const sanitized = Object.fromEntries(
+      Object.entries(data).map(([k, v]) => [k, v === undefined ? deleteField() : v])
+    );
+    await updateDoc(doc(db, 'slides', id), sanitized);
     setSaving(false);
   };
 
